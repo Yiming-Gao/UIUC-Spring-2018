@@ -52,6 +52,7 @@ These methods are distinguished from classical statistical methods in that they 
 - Statistics generally pays more attention to the probabilistic theory and underlying structure of the model.
 
 # Linear Regression
+https://www.analyticsvidhya.com/blog/2016/07/deeper-regression-analysis-assumptions-plots-solutions/
 ### Assumptions
 1. There should be a **linear and additive** relationship between dependent (response) variable and independent (predictor) variable(s).
 
@@ -81,5 +82,10 @@ These methods are distinguished from classical statistical methods in that they 
 - **How to check:** Look at residual vs fitted values plot. If this problem exists, the plot will show a funnel shape pattern. Can also use Breusch-Pagan/ Cook-Weisberg test or White general test.
 
 5. **Normal Distribution of error terms:** 
-- Confidence intervals may become too wide or narrow. Once confidence interval becomes unstable, it leads to difficulty in estimating coefficients based on minimization of least squares.
+- Confidence intervals may become too wide or narrow. Once confidence interval becomes unstable, it leads to difficulty in estimating coefficients based on least squares.
 - **How to check:** QQ plot. Or Kolmogorov-Smirnov test, Shapiro-Wilk test.
+
+### Key Factors to Keep In Mind for Regression Model
+- Data exploration is an inevitable part of building predictive model.
+- To compare the goodness of fit for different models, we can analyse different metrics like statistical significance of parameters, R-square, Adjusted r-square, AIC, BIC and error term. Another one is the **Mallow’s Cp criterion**. This essentially checks for possible bias in your model, by comparing the model with all possible submodels (or a careful selection of them).
+- If your data set has multiple confounding variables, you should not choose automatic model selection method because you do not want to put these in a model at the same time.
