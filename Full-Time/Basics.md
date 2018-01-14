@@ -89,3 +89,19 @@ https://www.analyticsvidhya.com/blog/2016/07/deeper-regression-analysis-assumpti
 - Data exploration is an inevitable part of building predictive model.
 - To compare the goodness of fit for different models, we can analyse different metrics like statistical significance of parameters, R-square, Adjusted r-square, AIC, BIC and error term. Another one is the **Mallow’s Cp criterion**. This essentially checks for possible bias in your model, by comparing the model with all possible submodels (or a careful selection of them).
 - If your data set has multiple confounding variables, you should not choose automatic model selection method because you do not want to put these in a model at the same time.
+
+### KNN as a Feature Engine
+In practical model fitting, KNN can be used to add "local knowledge" in the staged process with other classification techniques. Steps:
+
+(1) KNN is run on the data, and for each record, a classification is derived
+
+(2) That result is added as a new feature to the record, and another classification method is then run on the data. The original predictors are used twice.
+
+Explanation: We can think of this staged use of KNN as a form of ensemble learning, in which multiple predictive modeling methods are used in conjunction with one another. It can also be considered as a form of **feature engineering** where the aim is to derive features that have predictive power.
+
+#### How to choose k?
+几点考虑：
+- K is too small, we may be overfitting: include the noise in the data;
+- K is too big, we may oversmooth the data and miss out on KNN's ability to capture the local structure in the data
+
+解决办法：
