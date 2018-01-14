@@ -9,7 +9,7 @@ Heteroskedasticity indicates that prediction errors differ for different ranges 
 
 For example, in house price prediction, it may indicate that **the regression has left something unaccounted for** in high and low-range homes.
 
-### Data Science & P-value
+# Data Science & P-value
 #### Statistical Significant (alpha)
 is how people measure whether an experiment yields a result more extreme than what chance might produce. If the result is beyond the realm of chance variation, it is said to be statistically significant.
 
@@ -51,8 +51,8 @@ These methods are distinguished from classical statistical methods in that they 
 - Machine learning tends to be more focused on developing efficient algorithms that scale to large data in order to optimize the predictive model.
 - Statistics generally pays more attention to the probabilistic theory and underlying structure of the model.
 
-### Linear Regression
-#### Assumptions
+# Linear Regression
+### Assumptions
 1. There should be a **linear and additive** relationship between dependent (response) variable and independent (predictor) variable(s).
 
 2. There should be no correlation between the residual (error) terms. Absence of this phenomenon is known as Autocorrelation.
@@ -63,7 +63,7 @@ These methods are distinguished from classical statistical methods in that they 
 
 5. The error terms must be normally distributed.
 
-#### What if those assumptions get violated?
+### What if those assumptions get violated?
 1. **Linear and Additive**: The model will fail to capture trend, thus resulting in erroneous predictions.
 
 **How to check:** Look at residual vs fitted value plots. Also, can include polynomial terms (X, X^2, X^3) in the model to capture non-linear effect.
