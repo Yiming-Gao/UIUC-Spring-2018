@@ -10,7 +10,7 @@ Heteroskedasticity indicates that prediction errors differ for different ranges 
 For example, in house price prediction, it may indicate that **the regression has left something unaccounted for** in high and low-range homes.
 
 ### Data Science & P-value
-#### Statistical Significant
+#### Statistical Significant (alpha)
 is how people measure whether an experiment yields a result more extreme than what chance might produce. If the result is beyond the realm of chance variation, it is said to be statistically significant.
 
 #### P-value 
@@ -20,6 +20,33 @@ Given a chance model that embodies the null hypothesis, p-value is the probabili
 The case in which you mistakenly conclude an effect is real, when it is really just **due to chance**.
 
 #### Type II Error (False Negative)
-The case in which you mistakenly conclude that an effect is not real, when it is really real
+The case in which you mistakenly conclude that an effect is not real, when it is really real.
 
-####
+A Type 2 error relates to the concept of "power", and the probability of making this error is referred to as "beta". We can reduce our risk of making a Type II error by making sure our test has enough power—which depends on whether the sample size is sufficiently large to detect a difference when it exists.  
+
+#### For a data scientist, p-value is a useful metric in situations where you want to know whether a model result that appears interesting and useful is within the range of normal chance variation.
+
+#### Data Science & t-statistic
+一个系数的t-statistic = hat(b)/SE(hat(b)), which measures the extent to which a coefficient is "statistically significant", outside the range of what a random chance arrangement of predictor and target variable might produce.
+
+Data scientist primarily focus on t-statistic as a useful guide for whether to include a predictor in a model or not.
+
+### Chi-Square Test (Goodness-of-fit)
+It is used with count data to test how well it fits some expected distribution. The most common use of *chi-square* statistic in practice is with r* c contingency tables, to assess whether the null hypothesis of independence among variables is reasonable.
+
+(1) Determine appropriate sample sizes for web experiments. (These experiments often have very low click rates, in such cases, Fisher's exact test, the chi-square test can be useful as a component of power and sample size calculations)
+
+(2) Chi-square tests, or similar resampling simulations, are used more as a filter to determine whether an effect or feature is worthy of further consideration.
+
+(3) They can also be used in automated feature selection in machine learning, to access class prevalence across features and identify features where the prevalence of a certain class is unusually high or low, in a way that is not compatible with random variation.
+
+#### Data science is not so worried about statistical significance, but more concerned with optimizing overall effort and results.
+
+#### 违背回归假设 & Data Science
+Most often in data science, the interest is primarily in **predictive accuracy**, so some review of heteroskedasticity may be in order. You may discover that there is some signal in the data that your model has not captured. Satisfying distributional assumptions simply for the sake of validating formal statistical inference (p-values, F-statistics, etc.), however, is not that important for the data scientist.
+
+#### 经典统计学 & Data Science
+These methods are distinguished from classical statistical methods in that they are data-driven and do not seek to impose linear or other overall structure on the data.
+
+- Machine learning tends to be more focused on developing efficient algorithms that scale to large data in order to optimize the predictive model.
+- Statistics generally pays more attention to the probabilistic theory and underlying structure of the model.
