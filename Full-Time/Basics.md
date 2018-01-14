@@ -50,3 +50,22 @@ These methods are distinguished from classical statistical methods in that they 
 
 - Machine learning tends to be more focused on developing efficient algorithms that scale to large data in order to optimize the predictive model.
 - Statistics generally pays more attention to the probabilistic theory and underlying structure of the model.
+
+### Linear Regression
+#### Assumptions
+1. There should be a **linear and additive** relationship between dependent (response) variable and independent (predictor) variable(s).
+
+2. There should be no correlation between the residual (error) terms. Absence of this phenomenon is known as Autocorrelation.
+
+3. The independent variables should not be correlated. Absence of this phenomenon is known as multicollinearity.
+
+4. The error terms must have constant variance. This phenomenon is known as homoskedasticity. The presence of non-constant variance is referred to heteroskedasticity.
+
+5. The error terms must be normally distributed.
+
+#### What if those assumptions get violated?
+1. **Linear and Additive**: The model will fail to capture trend, thus resulting in erroneous predictions.
+
+**How to check:** Look at residual vs fitted value plots. Also, can include polynomial terms (X, X^2, X^3) in the model to capture non-linear effect.
+
+2. **Autocorrelation:** This usually occurs in time series models where the next instant is dependent on previous instant. If the error terms are correlated, the estimated standard errors tend to underestimate the true standard error. If this happens, it causes confidence intervals and prediction intervals to be narrower. Narrower confidence interval means that a 95% confidence interval would have lesser probability than 0.95 that it would contain the actual value of coefficients. 
