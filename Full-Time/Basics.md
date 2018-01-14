@@ -26,6 +26,9 @@ A Type 2 error relates to the concept of "power", and the probability of making 
 
 #### For a data scientist, p-value is a useful metric in situations where you want to know whether a model result that appears interesting and useful is within the range of normal chance variation.
 
+#### Confidence Intervals
+If repeated samples were taken and the 95% confidence interval was computed for each sample, 95% of the intervals would contain the population mean.
+
 #### Data Science & t-statistic
 一个系数的t-statistic = hat(b)/SE(hat(b)), which measures the extent to which a coefficient is "statistically significant", outside the range of what a random chance arrangement of predictor and target variable might produce.
 
