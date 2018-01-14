@@ -105,3 +105,54 @@ Explanation: We can think of this staged use of KNN as a form of ensemble learni
 - K is too big, we may oversmooth the data and miss out on KNN's ability to capture the local structure in the data
 
 解决办法：
+- Determined by accuracy with holdout or validation set
+- Depends greatly on the nature of data
+
+如何变化：K = 1
+- more complex
+- more flexible
+- less interpretable
+- overfit
+- high variance
+- low bias
+
+### Tree
+#### 步骤
+- The rules correspond to successive partitioning of the data into subpartitions
+- Each partition, or split, references a specific value of a predictor variable and divides the data into records where the predictor value is above or below that split value
+- At each stage, the tree algorithm chooses the split that **minimizes the outcome impurity within each subpartition**
+- When no further splits can be made, the tree is fully grown and each terminal node, or leaf, has records of a single class; new cases following that rule path would be assigned that class
+- **A fully grown tree (completely pure leaves & 100% accuracy) overfits the data and must be pruned back so that it captures signal and not noise**
+
+#### Ways to measure homogeneity
+- Gini Impurity: I(A) = p(1-p)
+- Entropy: I(A) = -plog2(p) - (1-p)log2(1-p)
+- p is the misclassified records within that partition
+
+#### Tree model has two appealing aspects:
+- Tree models provide a visual tool for exploring the data, to gain an idea of what variables are important and how they relate to one another. **Trees can capture nonlinear relationships among predictive variables.**
+- Tree models provide a set of rules that can **be effectively communicated to non-specialists**, either for implementation or to "sell" a data mining project.
+
+# Unsupervised Learning
+Unsupervised learning techniques require that the data **be appropriately scaled.** For example, with the personal loan data, the variables have widely different units and magnitude. Some variables have relatively small values (e.g., number of years employed), while others have very large values (e.g., loan amount in dollars). If the data is not scaled, then the PCA, K-means and other clustering methods will be dominated by the variables with large values and ignore the variables with small values.
+
+#### 聚类分析& 混合型数据
+K-means and PCA are most appropriate for **continuous variables**. 
+- For smaller data sets, it is better to use hierarchical clustering with *Gower's distance*.
+- In principle, k-means could also be applied to binary or catogorical data by using "one hot encoder" representation to convert the categorical data to numeric values.
+- For very large data sets, we could apply clustering to different subsets of data taking on specific catogorical values
+
+【Gower's Distance】: scales all variables to the 0-1 range (it is often used with mixed numeric and categorical data)
+- For **numeric** variables and ordered factors, distance is calculated as the absolute value of the difference between two records (manhattan distance)
+- For **categorical** variables
+  - distance is 1, if the categories between two records are different
+  - distance is 0, if the categories are the same
+  
+  ## Comparisons  
+  For highly structured data (in which the clusters are well separated), all methods produce similar results
+  - K means scales to very large data and easily understood
+  - Hierarchical clustering can be applied to mixed data types -- numeric and categorical -- and lends itself to an intuitive display (dendrogram)
+  - Model-based clustering provides a more rigorous approach, as opposed to the heuristic methods
+  
+  For noisy data, produce different results
+  - **For data scientists, there is no simple rule of thumb to guide the choice. Ultimatly, the method used will depend on the data size and the goal of the application.**
