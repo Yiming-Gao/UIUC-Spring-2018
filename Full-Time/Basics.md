@@ -68,18 +68,18 @@ These methods are distinguished from classical statistical methods in that they 
 - The model will fail to capture trend, thus resulting in erroneous predictions.
 - **How to check:** Look at residual vs fitted value plots. Also, can include polynomial terms (X, X^2, X^3) in the model to capture non-linear effect.
 
-2. **Autocorrelation:** This usually occurs in time series models where the next instant is dependent on previous instant. If the error terms are correlated, the estimated standard errors tend to underestimate the true standard error. If this happens, it causes confidence intervals and prediction intervals to be narrower. Narrower confidence interval means that a 95% confidence interval would have probability less than 0.95 that it would contain the actual value of coefficients. 
+2. **Autocorrelation:** 
+- This usually occurs in time series models where the next instant is dependent on previous instant. If the error terms are correlated, the estimated standard errors tend to underestimate the true standard error. If this happens, it causes confidence intervals and prediction intervals to be narrower. Narrower confidence interval means that a 95% confidence interval would have probability less than 0.95 that it would contain the actual value of coefficients. 
+- **How to check:** Look for Durbin - Watson (DW) statistic. It must lie between 0 and 4. 0<DW<2 implies positive autocorrelation, while 2<DW<4 implies negative autocorrelation.
 
-**How to check:** Look for Durbin - Watson (DW) statistic. It must lie between 0 and 4. 0<DW<2 implies positive autocorrelation, while 2<DW<4 implies negative autocorrelation.
+3. **Multicollinearity:** 
+- This causes standard errors to increase, thus the confidence interval becomes wider leading to inaccurate estimates of parameters.
+- **How to check:** Use scatter plot to visualize correlation among variables. Also, you can also use VIF (Variation Inflation Factor). VIF > 10 implies serious multicollinearity。
 
-3. **Multicollinearity:** This causes standard errors to increase, thus the confidence interval becomes wider leading to inaccurate estimates of parameters.
+4. **Heteroskedasticity:** 
+- Non-constant variance arises in presence of outliers or extreme leverage values. When this phenomenon occurs, the confidence interval tends to be very wide or narrow.
+- **How to check:** Look at residual vs fitted values plot. If this problem exists, the plot will show a funnel shape pattern. Can also use Breusch-Pagan/ Cook-Weisberg test or White general test.
 
-**How to check:** Use scatter plot to visualize correlation among variables. Also, you can also use VIF (Variation Inflation Factor). VIF > 10 implies serious multicollinearity。
-
-4. **Heteroskedasticity:** Non-constant variance arises in presence of outliers or extreme leverage values. When this phenomenon occurs, the confidence interval tends to be very wide or narrow.
-
-**How to check:** Look at residual vs fitted values plot. If this problem exists, the plot will show a funnel shape pattern. Can also use Breusch-Pagan/ Cook-Weisberg test or White general test.
-
-5. **Normal Distribution of error terms:** Confidence intervals may become too wide or narrow. Once confidence interval becomes unstable, it leads to difficulty in estimating coefficients based on minimization of least squares.
-
-**How to check:** QQ plot. Or Kolmogorov-Smirnov test, Shapiro-Wilk test.
+5. **Normal Distribution of error terms:** 
+- Confidence intervals may become too wide or narrow. Once confidence interval becomes unstable, it leads to difficulty in estimating coefficients based on minimization of least squares.
+- **How to check:** QQ plot. Or Kolmogorov-Smirnov test, Shapiro-Wilk test.
