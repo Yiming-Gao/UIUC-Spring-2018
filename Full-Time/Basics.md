@@ -64,9 +64,9 @@ These methods are distinguished from classical statistical methods in that they 
 5. The error terms must be normally distributed.
 
 ### What if those assumptions get violated?
-1. **Linear and Additive**: The model will fail to capture trend, thus resulting in erroneous predictions.
-
-**How to check:** Look at residual vs fitted value plots. Also, can include polynomial terms (X, X^2, X^3) in the model to capture non-linear effect.
+1. **Linear and Additive**: 
+- The model will fail to capture trend, thus resulting in erroneous predictions.
+- **How to check:** Look at residual vs fitted value plots. Also, can include polynomial terms (X, X^2, X^3) in the model to capture non-linear effect.
 
 2. **Autocorrelation:** This usually occurs in time series models where the next instant is dependent on previous instant. If the error terms are correlated, the estimated standard errors tend to underestimate the true standard error. If this happens, it causes confidence intervals and prediction intervals to be narrower. Narrower confidence interval means that a 95% confidence interval would have probability less than 0.95 that it would contain the actual value of coefficients. 
 
