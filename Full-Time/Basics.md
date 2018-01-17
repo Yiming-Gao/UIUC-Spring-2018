@@ -116,6 +116,17 @@ Maximum likelihood is used to optimizae the vest values for the coefficients.
 - **Remove Correlated Inputs**:  Like linear regression, the model can overfit if you have multiple highly-correlated inputs. Consider calculating the pairwise correlations between all inputs and removing highly correlated inputs.
 - **Fail to converge**:  This can happen if there are many highly correlated inputs in your data or the data is very sparse (e.g. lots of zeros in your input data).
 
+#### ROC-AUC
+**Sensitivity (Recall)**:  TP/ (TP + FN)
+
+**Specificity**: TN / (TN + FP)
+
+**Precision**: TP/ (TP + FP)
+
+ROC Curve:
+- X axis: Specificity
+- Y axis: Sensitivity
+- A model with high discrimination ability will have high sensitivity and specificity simultaneously, leading to an ROC curve which goes close to the top left corner of the plot.
 
 
 ### KNN as a Feature Engine
