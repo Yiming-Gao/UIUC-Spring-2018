@@ -129,16 +129,23 @@ ROC Curve:
 - A model with high discrimination ability will have high sensitivity and specificity simultaneously, leading to an ROC curve which goes close to the top left corner of the plot.
 
 # Generalized Linear Models
+https://onlinecourses.science.psu.edu/stat504/node/216
+
 **SAS PROC GENMOD, SAS PROC GLM (General)**
 
-|   |   |
-|:-:|:-:|
-| dd  |   |
-|   |   |
-|   |   |
-|   |   |
-|   |   |
-|   |   |
+| **Model**  | **Random**  | **Link**  | **Systematic**  |
+|:-:|:-:|:-:|:-:|
+| Linear Regression  | Normal  |  Identity | Continuous  |
+| ANOVA  | Normal  | Indentity  |  Categorical |
+| ANCOVA  | Normal  | Identity  | Mixed  |
+| Logistic Regression  | Binomial  |  Logit | Mixed  |
+| Loglinear  | Poisson  | Log  |  Categorical |
+|  Poisson Regression | Poisson  | Log  | Mixed  |
+| Multinomial response  |  Multinomial | Generalized Logit  | Mixed  |
+
+- ***Random***: refers to the probability distribution of the response Y
+- ***Systematic***: specifies the predictors
+- ***Link***: specifies the link between predictors and response
 
 
 ### KNN as a Feature Engine
