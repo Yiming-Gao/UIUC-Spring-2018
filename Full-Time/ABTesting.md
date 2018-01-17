@@ -25,4 +25,4 @@ You can change your confidence level (Bonferroni Correction) or do family-wide t
 The answer lies in the tendency of the human mind to underestimate the scope of natural random behavior. Hypothesis testing is to protect researchers from being fooled by random chance.
 
 ### Null hypothesis
-Any effect you observe is due to random chance.
+It embodies the notion that any effect you observe is due to random chance. The *hypothesis test* assumes that the null hypothesis is true, and tests whether the effect you observe is a reasonable outcome of that model.
