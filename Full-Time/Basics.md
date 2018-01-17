@@ -130,13 +130,13 @@ ROC Curve:
 
 # Generalized Linear Models
 **SAS PROC GENMOD, SAS PROC GLM (General)**
-
+```
 | Tables        | Are           | Cool  |
 | :------------- :|:-------------:| :-----:|
 | col 3 is      | right-aligned | $1600 |
 | col 2 is      | centered      |   $12 |
 | zebra stripes | are neat      |    $1 |
-
+```
 
 ### KNN as a Feature Engine
 In practical model fitting, KNN can be used to add "local knowledge" in the staged process with other classification techniques. Steps:
