@@ -128,6 +128,10 @@ ROC Curve:
 - Y axis: Sensitivity
 - A model with high discrimination ability will have high sensitivity and specificity simultaneously, leading to an ROC curve which goes close to the top left corner of the plot.
 
+# Generalized Linear Models
+**SAS PROC GENMOD, SAS PROC GLM (General)**
+
+
 
 ### KNN as a Feature Engine
 In practical model fitting, KNN can be used to add "local knowledge" in the staged process with other classification techniques. Steps:
