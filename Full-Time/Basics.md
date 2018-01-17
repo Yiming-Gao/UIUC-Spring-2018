@@ -93,6 +93,31 @@ https://www.analyticsvidhya.com/blog/2016/07/deeper-regression-analysis-assumpti
 - To compare the goodness of fit for different models, we can analyse different metrics like statistical significance of parameters, R-square, Adjusted r-square, AIC, BIC and error term. Another one is the **Mallow’s Cp criterion**. This essentially checks for possible bias in your model, by comparing the model with all possible submodels (or a careful selection of them).
 - If your data set has multiple confounding variables, you should not choose automatic model selection method because you do not want to put these in a model at the same time.
 
+# Logistic Regression
+It's a special type of regression where the response is binary, and it's related to a set of explanatory variables. 与linear regression区别在于, we model the odds of the response taking a particular value.
+
+We also assume that the logit transformation of the response has a linear relationship with the predictor variables.
+
+#### Sigmoid Function
+It maps any real-valued number into a value between 0 and 1: 1/(1 + e^-value)
+
+#### Equation
+y = e^(b0 + b1* x)/ (1 + e^(b0 + b1* x))
+
+Usually we model the probability that an input X belongs to the default class (Y=1), we have P(X) = e^(b0 + b1* X)/ (1 + e^(b0 + b1* X))
+
+#### MLE
+Maximum likelihood is used to optimizae the vest values for the coefficients.
+
+#### Potential Problems
+- **Binary output**
+- **Remove Noise**: Logistic regression assumes no error in the output variable (y), consider removing outliers and possibly misclassified instances from your training data.
+- **Gaussian Distribution**: Logistic regression is a linear algorithm (with a non-linear transform on output). It does assume a linear relationship between the input variables with the output. Data transforms of your input variables that better expose this linear relationship can result in a more accurate model. For example, you can use log, root, Box-Cox and other univariate transforms to better expose this relationship.
+- **Remove Correlated Inputs**:  Like linear regression, the model can overfit if you have multiple highly-correlated inputs. Consider calculating the pairwise correlations between all inputs and removing highly correlated inputs.
+- **Fail to converge**:  This can happen if there are many highly correlated inputs in your data or the data is very sparse (e.g. lots of zeros in your input data).
+
+
+
 ### KNN as a Feature Engine
 In practical model fitting, KNN can be used to add "local knowledge" in the staged process with other classification techniques. Steps:
 
