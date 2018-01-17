@@ -159,3 +159,10 @@ K-means and PCA are most appropriate for **continuous variables**.
   
   For noisy data, produce different results
   - **For data scientists, there is no simple rule of thumb to guide the choice. Ultimatly, the method used will depend on the data size and the goal of the application.**
+
+# Other Questions
+### How to deal with imbalanced data? (Cancer Detection)
+In an imbalanced data set, accuracy should not be used as a measure of performance. We should use **sensitivity** (TP rate), **Specificity** (TN rate), **F measure** to evaluate the performance of the classifier. If the minority class performance is found to be poor, we can take the following steps:
+- Undersampling, oversampling, or SMOTE to make the data balanced.
+- We can alter the prediction threshold using AUC-ROC curve.
+- We can assign weights to classes such that the minority classes gets larger weight.
