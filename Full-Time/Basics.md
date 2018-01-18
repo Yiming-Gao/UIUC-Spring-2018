@@ -107,7 +107,7 @@ y = e^(b0 + b1* x)/ (1 + e^(b0 + b1* x))
 Usually we model the probability that an input X belongs to the default class (Y=1), we have P(X) = e^(b0 + b1* X)/ (1 + e^(b0 + b1* X))
 
 #### MLE
-Maximum likelihood is used to optimizae the vest values for the coefficients.
+Maximum likelihood is used to optimize the best values for the coefficients.
 
 #### Potential Problems
 - **Binary output**
