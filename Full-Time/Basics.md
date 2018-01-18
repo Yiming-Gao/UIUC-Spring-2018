@@ -10,7 +10,7 @@ Heteroskedasticity indicates that prediction errors differ for different ranges 
 For example, in house price prediction, it may indicate that **the regression has left something unaccounted for** in high and low-range homes.
 
 # Data Science & P-value
-#### Statistical Significant (alpha)
+#### Statistical Significance (alpha)
 is how people measure whether an experiment yields a result more extreme than what chance might produce. If the result is beyond the realm of chance variation, it is said to be statistically significant.
 
 #### P-value 
