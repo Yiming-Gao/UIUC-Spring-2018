@@ -39,6 +39,12 @@ Next, decide the #samples/ visits necessary to hit the statistical significance 
 
 You can then evaluate the p-value to identify whether the metric of the B test is statistically significantly different from the metric of the baseline A test. If it is and the metric is better than the baseline, then the alternative site is the better way to go.
 
+**Some issues you should consider in this answer:**
+
+1) Identify potential biases due to interactions across pages. Talk to the product manager and see if there are ways that a random sampling may not work to test the nature of the change you're proposing for a web page.
+
+2) Perform a A/A test which implies testing two random samples of vistors, and check if the distribution and metric of choice doesn't have a statistically significant difference. This will ensure the fairness of the A/B test. It's a method of double-checking the randomizer.
+
 ## (DS Interview Questions) Tell me the process you will use to perform an A/B Testing.
 - **Collect Data:** Look for pages with low conversion rates or high drop-off rates that can be improved.
 - **Identify Goals:** Your conversion goals are the metrics that you are using to determine whether or not the variation is more successful than the original version.
@@ -46,12 +52,6 @@ You can then evaluate the p-value to identify whether the metric of the B test i
 - **Create Variations:** Make the desired changes to an element of your website or mobile app experience.
 - **Run Experiment:** Kick off your experiment and wait for visitors to participate. At this point, visitors to your site or app will be randomly assigned to either the control or experiment group. Their interaction with each experience is measured, counted, and compared to determine how each performs.
 - **Analyze Results**
-
-**Some issues you should consider in this answer:**
-
-1) Identify potential biases due to interactions across pages. Talk to the product manager and see if there are ways that a random sampling may not work to test the nature of the change you're proposing for a web page.
-
-2) Perform a A/A test which implies testing two random samples of vistors, and check if the distribution and metric of choice doesn't have a statistically significant difference. This will ensure the fairness of the A/B test. It's a method of double-checking the randomizer.
 
 ## Hypothesis Tests
 ### Why need this?
