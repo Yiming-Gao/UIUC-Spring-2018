@@ -30,6 +30,21 @@ Let's say a company is testing 20 different metrics on the browsing page - conve
 
 You can change your confidence level (Bonferroni Correction) or do family-wide tests before you dive into the individual metrics.
 
+## (DS Interview Questions) Design an experiment to figure out which web design alternative to use. Assume there have been no other experiments done and there is no knowledge of the user behavior. Discuss potential issues that can occur with the conclusions and how to avoid them.
+Identify the nature of the change and the metric to consider to decide which version of the site to use.
+
+Next, decide the #samples/ visits necessary to hit the statistical significance (e.g. 95%). This can be done by using 
+- a chi-squared test (if we are using a binomial random variable of clicking vs. not clicking)
+- a ztest (if we are using a normally distributed random variable)
+
+You can then evaluate the p-value to identify whether the metric of the B test is statistically significantly different from the metric of the baseline A test. If it is and the metric is better than the baseline, then the alternative site is the better way to go.
+
+**Some issues you should consider in this answer:**
+
+1) Identify potential biases due to interactions across pages. Talk to the product manager and see if there are ways that a random sampling may not work to test the nature of the change you're proposing for a web page.
+
+2) Perform a A/A test which implies testing two random samples of vistors, and check if the distribution and metric of choice doesn't have a statistically significant difference. This will ensure the fairness of the A/B test. It's a method of double-checking the randomizer.
+
 ## Hypothesis Tests
 ### Why need this?
 The answer lies in the tendency of the human mind to underestimate the scope of natural random behavior. Hypothesis testing is to protect researchers from being fooled by random chance.
