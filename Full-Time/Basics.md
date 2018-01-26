@@ -152,6 +152,17 @@ https://onlinecourses.science.psu.edu/stat504/node/216
 - ***Systematic***: specifies the predictors
 - ***Link***: specifies the link between predictors and response
 
+# Generalized Linear Mixed Models
+The word “Generalized” refers to non-normal distributions for the response variable, and
+the word “Mixed” refers to random effects in addition to the usual fixed effects of regression
+analysis. 
+
+
+#### Randomized Block Design
+The Randomized Block Design is research design's equivalent to stratified random sampling. Like stratified sampling, randomized block designs are constructed to reduce noise or variance in the data. They require that the researcher divide the sample into relatively homogeneous subgroups or blocks. Then, the experimental design you want to implement is implemented within each block or homogeneous subgroup. 
+
+The key idea is that the variability within each block is less than the variability of the entire sample. Thus each estimate of the treatment effect within a block is more efficient than estimates across the entire sample. And, when we pool these more efficient estimates across blocks, we should get an overall more efficient estimate than we would without blocking.
+
 
 # High Dimensional Data
 https://rpubs.com/ryankelly/reg
