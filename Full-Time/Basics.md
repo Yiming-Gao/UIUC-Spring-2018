@@ -148,6 +148,16 @@ https://onlinecourses.science.psu.edu/stat504/node/216
 - ***Link***: specifies the link between predictors and response
 
 
+# High Dimensional Data
+### Variable Screening
+In genetic studies, the number of variables is extremely large relative to the number of participants: there may be hundreds of subjects and hundreds of thousands of variables. This has a crippling effect on exploratory data analyses because nearly all multivariate procedures break down when the number of variables exceeds the sample size. As a result, it is necessary to reduce the number of variables to a subset of predictors that potentially impact the outcome of interest.
+**VariableScreening R package** allows us to narrow the subset of variables for the analysis.
+
+### Variable Selection
+Other types of genetic studies focus on specific genes. This creates a situation in which the sample size is somewhat larger than the number of predictors (e.g., 500 subjects and 300 variables). In these situations, many variables are often highly correlated. A complicated model may include many insignificant variables, and it may have less predictive power and be difficult to interpret.
+
+In these cases, approaches such as penalized least squares and penalized likelihood with the smoothly clipped absolute deviation (SCAD) penalty can select significant variables. We are developing broadly applicable techniques for high-dimensional variable selection. We also developed PROC SCAD, a pair of SAS procedures using the SCAD penalty for high-dimensional variable selection.
+
 ### KNN as a Feature Engine
 In practical model fitting, KNN can be used to add "local knowledge" in the staged process with other classification techniques. Steps:
 
