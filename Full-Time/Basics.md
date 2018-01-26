@@ -149,6 +149,56 @@ https://onlinecourses.science.psu.edu/stat504/node/216
 
 
 # High Dimensional Data
+https://rpubs.com/ryankelly/reg
+### Curse of Dimensionality
+Refers to how certain learning algorithms may perform poorly in high-dimensional data.
+
+1. High dimensionality is a curse when one is trying to do rejection sampling. With a higher dimension probability distribution, it becomes increasingly harder to find an appropriate enveloping distribution since the acceptance probability will keep shrinking with dimensionality.
+
+2. K-means clustering suffers as well in high dimensions, because having lots of dimensions means that everything is "far away" from each other. It's hard to know what true distance means when you have so many dimensions. That's why it's often helpful to perform PCA to reduce dimensionality before clustering.
+
+### Model Interpretability
+Often in multiple regression, many variables are not associated with the response. Irrelevant variables leads to unnecessary complexity in the resulting model. By setting coefficient = 0, we obtain a more easily interpretable model. Here are some approaches for automatically excluding features using this idea.
+
+#### (A) Subset Selection
+- Forward Stepwise Selection, which begins with a model containing no predictors, then adds predictors to the model which gives the greatest improvement to the fit. **(High dimensional setting where p>n)**
+- Backward Stepwise Selection, which begins with all predictors, then removes the least useful predictor one at a time. (n>)
+  
+- 4 Measures
+Criteria to choose the best subset of predictors.
+  - AIC = -2logL + 2p, the
+  - BIC = -2logL + log(n)* p, penalizes free parameters more strongly
+  - Adjusted R^2 = 1 - RSS/ (n-d-1)/TSS/(n-1), adds a penalty term for additional variables
+
+#### (B) Shrinkage Methods
+- Ridge Regression
+  - The data must be standardized.
+  - L2 regularization -- penalizes sum of squares
+  - works best when LS estimates have high variance
+  
+- Lasso Regression
+  - Zeroing out many coefficients
+  - L1 regularization -- penalizes sum of absolute values
+    
+- Elastic Net: a combination of Ridge and Lasso
+
+#### (C) Dimension Reduction Methods
+- PCA
+  - Derives a low-dimensional set of features from a large set of variables
+  - Idea: PCs capture the most variance in the data using linear combinations of the data
+  - Then 应用到模型中，use these PCs as predictors
+  - Response Y is not used to help determine the PC directions
+
+- Partial Least Squares
+  - Supervised: gives higher weights to the variables that are most strongly related to the response
+  - In practice, PLS performs no better than ridge regression
+
+### Considerations for High Dimensions
+Model fitting parameters R^2, Cp, AIC and BIC are not effective in high dimensional setting. The approaches above avoid overfitting by using a less flexible approach than OLS.
+
+In high dimensional setting, multicollinearity problem is extreme. It's useful to report error and prediction results using a test set, or cross-validation errors.
+
+
 ### Variable Screening
 In genetic studies, the number of variables is extremely large relative to the number of participants: there may be hundreds of subjects and hundreds of thousands of variables. This has a crippling effect on exploratory data analyses because nearly all multivariate procedures break down when the number of variables exceeds the sample size. As a result, it is necessary to reduce the number of variables to a subset of predictors that potentially impact the outcome of interest.
 **VariableScreening R package** allows us to narrow the subset of variables for the analysis.
