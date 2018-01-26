@@ -141,7 +141,7 @@ https://onlinecourses.science.psu.edu/stat504/node/216
 | **Model**  | **Random**  | **Link**  | **Systematic**  |
 |:-:|:-:|:-:|:-:|
 | Linear Regression  | Normal  |  Identity | Continuous  |
-| ANOVA  | Normal  | Indentity  |  Categorical |
+| ANOVA  | Normal  | Identity  |  Categorical |
 | ANCOVA  | Normal  | Identity  | Mixed  |
 | Logistic Regression  | Binomial  |  Logit | Mixed  |
 | Loglinear  | Poisson  | Log  |  Categorical |
