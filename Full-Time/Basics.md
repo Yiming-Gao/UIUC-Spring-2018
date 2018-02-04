@@ -310,6 +310,17 @@ K-means and PCA are most appropriate for **continuous variables**.
   For noisy data, produce different results
   - **For data scientists, there is no simple rule of thumb to guide the choice. Ultimatly, the method used will depend on the data size and the goal of the application.**
 
+## Bias-Variance Trade-off
+Bias measures the representation error and variance dentoes how far the values are spread out from the average value. When the risk function is a squared loss function. The error of a classifier could be decomposed into the sum of variance, squared bias and noise.
+
+In general, if the bias for a model is high, it will have low variance and vice versa.
+
+| **Classifier**  | **Variance**  | **Bias**  | 
+|:-:|:-:|:-:|
+| 1  | 0 |  very high | 
+| 1-NN  | high  | lower than 1  | 
+
+
 # Other Questions
 ### How to deal with imbalanced data? (Cancer Detection)
 In an imbalanced data set, accuracy should not be used as a measure of performance. We should use **sensitivity** (TP rate), **Specificity** (TN rate), **F measure** to evaluate the performance of the classifier. If the minority class performance is found to be poor, we can take the following steps:
