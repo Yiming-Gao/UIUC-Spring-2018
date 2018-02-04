@@ -269,7 +269,15 @@ Explanation: We can think of this staged use of KNN as a form of ensemble learni
 - high variance
 - low bias
 
-### Tree
+## Naive Bayes Classifier
+Known as **Generative Models**, which model the joint probability distribution P(X, y).
+
+比较：**Discriminative Models**, which model the conditional probability P(y|X).
+
+### Assumption
+The features in X are indenpendent.
+
+## Tree
 #### 步骤
 - The rules correspond to successive partitioning of the data into subpartitions
 - Each partition, or split, references a specific value of a predictor variable and divides the data into records where the predictor value is above or below that split value
@@ -311,7 +319,9 @@ K-means and PCA are most appropriate for **continuous variables**.
   - **For data scientists, there is no simple rule of thumb to guide the choice. Ultimatly, the method used will depend on the data size and the goal of the application.**
 
 ## Bias-Variance Trade-off
-Bias measures the representation error and variance dentoes how far the values are spread out from the average value. When the risk function is a squared loss function. The error of a classifier could be decomposed into the sum of variance, squared bias and noise.
+Bias measures the representation error and variance dentoes how far the values are spread out from the average value. 
+
+Most risk functions can be expressed as some function of the bias and the variance of the model. When the risk function is a squared loss function. The error of a classifier could be decomposed into the sum of variance, squared bias and noise.
 
 In general, if the bias for a model is high, it will have low variance and vice versa.
 
