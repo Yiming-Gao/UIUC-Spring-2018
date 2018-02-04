@@ -224,6 +224,25 @@ Other types of genetic studies focus on specific genes. This creates a situation
 
 In these cases, approaches such as penalized least squares and penalized likelihood with the smoothly clipped absolute deviation (SCAD) penalty can select significant variables. We are developing broadly applicable techniques for high-dimensional variable selection. We also developed PROC SCAD, a pair of SAS procedures using the SCAD penalty for high-dimensional variable selection.
 
+# Machine Learning 
+## KNN
+### Definition
+A classification algorithm which uses the labels of its k closest neighbors to determine the label for a new unseen instance.
+
+### Inductive Bias
+The implicit assumption(inductive bias): spatial smoothness -- nearby points will have similar labels
+
+（回顾）Inductive bias for DT: Data is axis separable and labels are partitionable in regions.
+
+### Pros
+- Learning is "free" since there is no learning or training step
+- It works well in practice.
+
+
+### Cons
+- Testing cost is high
+- It behaves badly in high dimensions -- When d comes to 10,000 or even larger, there will be some issues. For instance, if we use bag-of-word vectors for spam classification, d would be vocabulary size.
+
 ### KNN as a Feature Engine
 In practical model fitting, KNN can be used to add "local knowledge" in the staged process with other classification techniques. Steps:
 
