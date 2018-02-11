@@ -323,10 +323,10 @@ K-means and PCA are most appropriate for **continuous variables**.
   - Model-based clustering provides a more rigorous approach, as opposed to the heuristic methods
   
   For noisy data, produce different results
-  - **For data scientists, there is no simple rule of thumb to guide the choice. Ultimatly, the method used will depend on the data size and the goal of the application.**
+  - **For data scientists, there is no simple rule of thumb to guide the choice. Ultimately, the method used will depend on the data size and the goal of the application.**
 
 ## Bias-Variance Trade-off
-Bias measures the representation error and variance dentoes how far the values are spread out from the average value. 
+Bias measures the representation error and variance denotes how far the values are spread out from the average value. 
 
 Most risk functions can be expressed as some function of the bias and the variance of the model. When the risk function is a squared loss function. The error of a classifier could be decomposed into the sum of variance, squared bias and noise.
 
