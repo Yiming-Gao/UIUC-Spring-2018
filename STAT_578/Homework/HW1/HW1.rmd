@@ -1,0 +1,46 @@
+---
+title: "HW1_yimingg2"
+author: "Yiming Gao (yimingg2)"
+date: "2/11/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2)
+library(readr)
+library(plyr)
+setwd('/Users/Yiming/Desktop/Homework/STAT 578/ml-100k')
+```
+
+```{r}
+### Read in data table
+data = read.table(file = "ml-100k/u.data")
+colnames(data) = c("user_id", "item_id", "rating", "timestamp")
+
+# Drop timestamp from table (not useful)
+data = subset(data, select = -c(timestamp))
+
+### Read in user table
+user = read.table(file = "ml-100k/u.user", sep = "|")
+colnames(user) = c("user_id", "age", "gender", "occupation", "zip_code")
+
+# Drop zipcode (not useful)
+user = subset(user, select = -c(zip_code))
+
+### Read in genre table
+genre = read.table(file = "ml-100k/u.genre", sep = "|", quote = "")
+
+
+### Read in item table
+item = read.csv("ml-100k/u.item", sep = "|")
+colnames(item)<- c("movie_id" , "movie_title" , "release_date" , "video_release_date" , "IMDb_URL" , "unknown" , "Action" , "Adventure" , "Animation" , "Children's" , "Comedy" , "Crime" , "Documentary" , "Drama" , "Fantasy" , "Film-Noir" , "Horror" , "Musical" , "Mystery" , "Romance" , "Sci-Fi" , "Thriller" , "War" , "Western")
+
+# Drop video_release_date and URL
+item = subset(item, select = -c(IMDb_URL, video_release_date))
+```
+
+```{r}
+
+```
+
