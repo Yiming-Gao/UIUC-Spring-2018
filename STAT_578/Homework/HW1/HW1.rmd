@@ -6,20 +6,30 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+# https://rpubs.com/jeknov/movieRec
 library(data.table)
 library(ggplot2)
+library(RColorBrewer)
 library(readr)
+library(dplyr)
 library(plyr)
+library(recommenderlab)
+library(recosystem)
+library(devtools)
+library(SlopeOne)
+library(SVDApproximation)
 setwd('/Users/Yiming/Desktop/Homework/STAT 578/ml-100k')
+# install_github(repo = "SlopeOne", username = "tarashnot")
+# install_github(repo = "SVDApproximation", username = "tarashnot")
 ```
 
 ```{r}
 ### Read in data table
-data = read.table(file = "ml-100k/u.data")
-colnames(data) = c("user_id", "item_id", "rating", "timestamp")
+ratings = read.table(file = "ml-100k/u.data")
+colnames(ratings) = c("user_id", "item_id", "rating", "timestamp")
 
 # Drop timestamp from table (not useful)
-data = subset(data, select = -c(timestamp))
+ratings = subset(ratings, select = -c(timestamp))
 
 ### Read in user table
 user = read.table(file = "ml-100k/u.user", sep = "|")
@@ -37,10 +47,207 @@ item = read.csv("ml-100k/u.item", sep = "|")
 colnames(item)<- c("movie_id" , "movie_title" , "release_date" , "video_release_date" , "IMDb_URL" , "unknown" , "Action" , "Adventure" , "Animation" , "Children's" , "Comedy" , "Crime" , "Documentary" , "Drama" , "Fantasy" , "Film-Noir" , "Horror" , "Musical" , "Mystery" , "Romance" , "Sci-Fi" , "Thriller" , "War" , "Western")
 
 # Drop video_release_date and URL
-item = subset(item, select = -c(IMDb_URL, video_release_date))
+item = subset(item, select = -c(IMDb_URL, release_date, video_release_date))
 ```
+
+### Convert ratings matrix in a proper format
+In order to use the ratings data for building a recommendation engine with *recommenderlab*, we need to convert rating matrix into a sparse matrix of type realRatingMatrix
+```{r}
+# Create ratings matrix. Rows = userId, Columns = movieID
+ratingmat = dcast(ratings, user_id~item_id, value.var = "rating", na.rm = FALSE)
+ratingmat = as.matrix(ratingmat[, -1]) # remove user IDs
+
+# Convert rating matrix into a recommenderlab sparse matrix
+ratingmat = as(ratingmat, "realRatingMatrix")
+ratingmat
+```
+We can see that the full data set contains 100000 ratings by 943 users on 1682 items.
+
+Collaborative filtering algorithms are based on measuring the similarity between users or between items. For this purpose, recommenderlab contains the similarity function. The supported methods to compute similarities are *cosine*, *pearson*, and *jaccard*.
+
+The *recommenderlab* package contains some options for the recommendation algorithm.
+
+- **IBCF_realRatingMatrix**: Recommender based on **item-based** collaborative filtering
+- **UBCF_realRatingMatric**: Recommender based on **user-based** collaborative filtering
+
+I will use IBCF and UBCF models.
+
+Next, I determine how similar the first four users are with each other by creating and visualizing similarity matrix that uses the cosine distance:
+```{r}
+similarity_users = similarity(ratingmat[1:4, ], 
+                              method = "cosine", 
+                              which = "users")
+as.matrix(similarity_users)
+image(as.matrix(similarity_users), main = "User similarity")
+```
+In the given matrix, each row and each column corresponds to a user, and each cell corresponds to the similarity between two users. The more red the cell is, the more similar two users are. Note that the diagonal is red, since it's comparing each user with itself.
+
+Using the same approach, I compute similarity between the first four movies.
 
 ```{r}
-
+similarity_items = similarity(ratingmat[, 1:4], 
+                              method = "cosine", 
+                              which = "items")
+as.matrix(similarity_items)
+image(as.matrix(similarity_items), main = "Movies similarity")
 ```
 
+# EDA
+```{r}
+# Unique values of ratings
+vector_ratings = as.vector(ratings$rating)
+table(vector_ratings)
+```
+There are 5 scores. And the distribution of those ratings is:
+```{r, echo=FALSE}
+qplot(vector_ratings, binwidth = 0.5, fill = I("dodgerblue1")) + 
+  ggtitle("Distribution of the ratings")
+```
+As we see, the majority of movies are rated with a score of 3 or 4. The most common rating is 4.
+
+### Number of views of the top movies
+Now let's see what are the most viewed movies.
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+views_per_movie = colCounts(ratingmat)
+
+# create dataframe of views
+table_views = data.frame(movie = names(views_per_movie), 
+                         views = views_per_movie) 
+
+# sort by number of views
+table_views = table_views[order(table_views$views, decreasing = TRUE), ] 
+
+# Merge on movie titles
+temp = subset(item, select = c(movie_id, movie_title))
+temp$movie_id = as.factor(temp$movie_id)
+table_views = table_views %>% 
+  inner_join(temp, by = c("movie" = "movie_id"))
+
+for (i in 1: nrow(table_views)){
+table_views[i, 3] = as.character(temp[temp$movie_id == table_views[i, 1], ]$movie_title)
+}
+rm(temp)
+
+head(table_views, n = 10)
+```
+
+```{r, echo=FALSE}
+ggplot(table_views[1:10, ], aes(x = movie_title, y = views)) +
+  geom_bar(stat = "identity", width = 0.5, fill = I("dodgerblue2")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+ggtitle("Number of views of the top movies")
+```
+We see that "Star Wars (1977)" is the most viewed movie, exceeding the second-most-viewed "Contack (1997)" by 74 views.
+
+### Distribution of the average movie rating
+Now I identify the top-rated movies by computing the average rating of each of them.
+```{r, echo=FALSE}
+average_ratings = colMeans(ratingmat)
+qplot(average_ratings, fill = I("dodgerblue2")) + 
+  stat_bin(binwidth = 0.1) +
+  ggtitle("Distribution of the average movie rating")
+
+average_ratings_relevant <- average_ratings[views_per_movie > 50] 
+qplot(average_ratings_relevant) + 
+  stat_bin(binwidth = 0.1) +
+  ggtitle(paste("Distribution of the relevant average ratings"))
+```
+The first image above shows the distribution of the average movie rating. The highest value is around 3, and there are a few movies whose rating is either 1 or 5. Probably, the reason is that these movies received a rating from a few people only, so we shouldn't take them into account.
+
+I remove the movies whose number of views is below a defined threshold of 50, creating a subset of only relevant movies. The second image above shows the distribution of the relevant average ratings. All the rankings are between 2.16 and 4.49. As expected, the extremes were removed. The highest value changes, and now it is around 3.5.
+
+### Heatmap of the rating matrix
+I visualize the whole matrix of ratings by building a heat map whose colors represent the ratings. Each row of the matrix corresponds to a user, each column to a movie, and each cell to its rating.
+```{r, echo=FALSE}
+image(ratingmat, main = "Heatmap of the rating matrix") 
+
+image(ratingmat[1:20, 1:25], main = "Heatmap of the first 20 rows and 25 columns")
+```
+Since there are too many users and items, the first chart is hard to read. The second chart is built zooming in on the first rows and columns.
+
+Some users saw more movies than the others. So, instead of displaying some random users and items, I should select the most relevant users and items. Thus I visualize only the users who have seen many movies and the movies that have been seen by many users. To identify and select the most relevant users and movies, I follow these steps:
+
+1. Determine the minimum number of movies per user.
+2. Determine the minimum number of users per movie.
+3. Select the users and movies matching these criteria.
+
+```{r}
+min_n_movies = quantile(rowCounts(ratingmat), 0.99)
+min_n_users = quantile(colCounts(ratingmat), 0.99)
+print("Minimum number of movies per user:")
+min_n_movies
+print("Minimum number of users per movie:")
+min_n_users
+
+image(ratingmat[rowCounts(ratingmat) > min_n_movies,
+                 colCounts(ratingmat) > min_n_users], 
+main = "Heatmap of the top users and movies")
+```
+Most of them have seen all the top movies, and this is not surprising. Some columns of the heatmap are darker than the others, meaning that these columns represent the highest-rated movies.Conversely, darker rows represent users giving higher ratings. Because of this, it might be useful to normalize the data, which I will do in the next step.
+
+
+## Data prepraration
+1. Select the relevant data.
+2. Normalize the data
+3. Binarize the data
+
+### Select the relevant data
+In order to select the most relevant data, I define the minimum number of users per rated movie as 50 and the minimum views number per movie as 50:
+```{r}
+ratings_movies = ratingmat[rowCounts(ratingmat) > 50, colCounts(ratingmat) > 50] # may need change
+ratings_movies
+```
+Such a selection of the most relevant data contains 563 users and 593 movies, compared to previous 943 users and 1682 movies in the total dataset.
+
+Using the same approach as previously, I visualize the top 2 percent of users and movies in the new matrix of the most relevant data:
+
+```{r}
+min_movies <- quantile(rowCounts(ratings_movies), 0.98)
+min_users <- quantile(colCounts(ratings_movies), 0.98)
+image(ratings_movies[rowCounts(ratings_movies) > min_movies,
+                     colCounts(ratings_movies) > min_users], 
+main = "Heatmap of the top users and movies")
+
+average_ratings_per_user <- rowMeans(ratings_movies)
+qplot(average_ratings_per_user) + stat_bin(binwidth = 0.1) +
+  ggtitle("Distribution of the average rating per user")
+```
+
+In the heatmap, some rows are darker than the others. This might mean that some users give higher ratings to all the movies. The distribution of the average rating per user across all the users varies a lot, as the second chart above shows.
+
+### Normalize the data
+Having users who give high (or low) ratings to all their movies might bias the results. In order to remove this effect, I normalize the data in such a way that the average rating of each user is 0. As a quick check, I calculate the average rating by users, and it is equal to 0, as expected:
+```{r}
+ratings_movies_norm = normalize(ratings_movies)
+sum(rowMeans(ratings_movies_norm) > 0.00001)
+```
+Now, I visualize the normalized matrix for the top movies. It is colored now because the data is continuous:
+```{r}
+image(ratings_movies_norm[rowCounts(ratings_movies_norm) > min_movies,
+                          colCounts(ratings_movies_norm) > min_users], 
+main = "Heatmap of the top users and movies")
+```
+There are still some lines that seem to be more blue or more red. The reason is that I am visualizing only the top movies. I have already checked that the average rating is 0 for each user.
+
+### Binarizing data
+Some recommendation models work on binary data, so it might be useful to binarize the data, that is, define a table containing only 0s and 1s. The 0s will be either treated as missing values or as bad ratings.
+
+In our case, I will define a matrix having 1 if the user rated the movie, and 0 otherwise. In this case, the information about the rating is lost, of which a 5 percent portion can be visualized as below.
+```{r}
+ratings_movies_watched = binarize(ratings_movies, minRating = 1)
+min_movies_binary = quantile(rowCounts(ratings_movies), 0.95)
+min_users_binary = quantile(colCounts(ratings_movies), 0.95)
+image(ratings_movies_watched[rowCounts(ratings_movies) > min_movies_binary,
+                             colCounts(ratings_movies) > min_users_binary], 
+main = "Heatmap of the top users and movies")
+```
+
+## Model
+
+### Item-based Collaborative Filtering Model
+Collaborative filtering is a branch of recommendation that takes account of the information about different users. The word "collaborative" refers to the fact that users collaborate with each other to recommend items. In fact, the algorithms take account of user ratings and preferences.
+
+The starting point is a rating matrix in which rows correspond to users and columns correspond to items. The core algorithm is based on these steps:
+1. For each two items, measure how similar they are in terms of having received similar ratings by similar users
+
+2. For each item, identify the k most similar
