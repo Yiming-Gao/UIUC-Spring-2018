@@ -2,7 +2,11 @@
 title: "HW1_yimingg2"
 author: "Yiming Gao (yimingg2)"
 date: "2/11/2018"
-output: pdf_document
+output:
+  html_document: default
+  pdf_document: default
+linestretch: 1.2
+fontsize: 10.5pt
 ---
 
 ```{r setup, include=FALSE}
@@ -143,7 +147,7 @@ We see that "Star Wars (1977)" is the most viewed movie, exceeding the second-mo
 Now I identify the top-rated movies by computing the average rating of each of them.
 ```{r, echo=FALSE}
 average_ratings = colMeans(ratingmat)
-qplot(average_ratings, fill = I("dodgerblue2")) + 
+qplot(average_ratings) + 
   stat_bin(binwidth = 0.1) +
   ggtitle("Distribution of the average movie rating")
 
@@ -250,4 +254,24 @@ Collaborative filtering is a branch of recommendation that takes account of the 
 The starting point is a rating matrix in which rows correspond to users and columns correspond to items. The core algorithm is based on these steps:
 1. For each two items, measure how similar they are in terms of having received similar ratings by similar users
 
-2. For each item, identify the k most similar
+2. For each item, identify the k most similar items
+
+3. For each user, identify the items that are most similar to the user's purchases
+
+### IBCF Model
+Some parameters of IBCF models are:
+
+- k: the number of items to compute the similarities among them in the first step
+- method: a similarity function, which is Cosine by default
+
+```{r, include=FALSE}
+### Read in all training and test sets
+# u1
+u1_train = read.table(file = "ml-100k/u1.base")
+u1_test = read.table(file = "ml-100k/u1.test")
+colnames(u1_train) = c("user_id", "item_id", "rating", "timestamp")
+colnames(u1_test) = c("user_id", "item_id", "rating", "timestamp")
+u1_train = subset(u1_train, select = -c(timestamp))
+u1_test = subset(u1_test, select = -c(timestamp))
+```
+
