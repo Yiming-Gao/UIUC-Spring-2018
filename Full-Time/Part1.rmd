@@ -1,0 +1,138 @@
+---
+title: "Cyence Data Exercise"
+author: "Yiming Gao"
+date: "2/18/2018"
+output:
+  html_document:
+    theme: readable
+    toc: true
+    toc_float: true
+---
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 15px;
+  }
+</style>
+
+# Part 1
+First I read in the dataset and check the variable names. As a reminder for myself, I listed the data dictionary here:
+
+- **case_number**: identification of each case
+- **case_received_date**: when the case was received
+- **decision_date**: when a decision on the case was made
+- **case_status**: the decision on the case
+- **employer_name**: the employer applying for the case
+- **employer_num_employees**: the number of employees employed by the employer
+- **employer_yr_established**: the year the employer was established
+- **job_education**: the education level required for the job offered
+- **job_experience_num_month**: the experience required for the job offered, in months
+- **job_state**: the location of the job
+- **job_foreign_lang_req**: if a foreign language was required for the job
+- **job_level**: the level of the job offered
+- **employee_citizenship**: the citizenship of the employee
+- **wage_offer**: the wage offered, or the lower-end of the wage offered
+- **wage_unit**: the unit of the wage
+
+```{r, message=FALSE, warning=FALSE}
+data = read.csv("data_perm_take_home.csv")
+names(data)
+```
+
+## Question 1
+**Which employer has the most entries in the dataset?**
+
+`temp` extracts only `employer_name` and their corresponding frequencies from the dataset. Then I sort the dataset based on the decreasing order of `Freq` and extract the first element.
+
+```{r}
+temp = as.data.frame(table(data$employer_name))
+print(temp[order(-temp$Freq), ][1, ])
+```
+
+We can see that **COGNIZANT TECHNOLOGY SOLUTIONS US CORPORATION** has the most entries (5441 times).
+
+
+## Question 2
+**Which employer has the most “Certified-Expired” cases?**
+
+Same method as Q1.
+
+```{r, message=FALSE, warning=FALSE}
+temp = as.data.frame(table(data[data$case_status == "Certified-Expired", ]$employer_name))
+print(temp[order(-temp$Freq), ][1, ])
+```
+
+We can see that among the employers which have "Certified-Expired" cases, **MICROSOFT CORPORATION** has the most cases (521 times).
+
+## Question 3
+**How many unique employers contain the character string "APPLE" that is not "APPLE INC."?**
+
+`grep` function returns the index in the vector which contains the given string. I calculate the difference between them.
+
+```{r, message=FALSE, warning=FALSE}
+length(grep("APPLE", unique(data$employer_name))) - length(grep("APPLE INC.", unique(data$employer_name)))
+```
+
+There are 6 unique employers that contain the character string "APPLE" that is not "APPLE INC."
+
+
+## Question 4
+**The dataset is said to contain U.S. DoL’s decisions from 1st to 3rd Quarter, inclusive, of one year: when does DoL’s fiscal year start and end? On which date were most decisions made? On which weekday were most decisions made?**
+
+```{r}
+# data$decision_year = strsplit(decision_date, "-")
+data$decision_date = as.Date(as.character(data$decision_date), format = "%m/%d/%Y")
+
+# Create additional columns
+data$decision_year = substring(data$decision_date, 3, 4)
+data$decision_quarter = quarters(data$decision_date)
+data$decision_weekday = weekdays(data$decision_date)
+```
+
+1. Still not fully understand the meaning of first quesion. Does it mean fiscal year starts on 2014-10-01 and ends on 2015-06-30?
+
+```{r}
+min(data$decision_date)
+max(data$decision_date)
+```
+
+2. From the output of the cell below, we can see that 2015-01-26 has the most decision made, which was 537 cases.
+
+```{r}
+temp = as.data.frame(table(data$decision_date))
+print(temp[order(-temp$Freq), ][1, ])
+```
+
+3. From the output of the cell below, we can see that Friday has the most decision made, which was 13048 cases.
+
+```{r}
+temp = as.data.frame(table(data$decision_weekday))
+print(temp[order(-temp$Freq), ][1, ])
+```
+
+## Question 5
+**Write a function that plots a histogram with 50 bins of the duration between from case_received_date to decision_date for any given employeer_name. Use the function to plot for "APPLE INC." and "GOOGLE INC."**
+
+```{r}
+library(ggplot2)
+Histogram_func <- function(employer_name) {
+  plotdata = data[data$employer_name == employer_name, ]
+  plotdata$diff = plotdata$decision_date - as.Date(as.character(plotdata$case_received_date), format="%m/%d/%Y")
+  
+  # create histogram
+  df = data.frame(duration = plotdata$diff)
+  ggplot(df, aes(x = duration)) + geom_histogram(bins = 50,  # #bins = 50
+                                                 fill = I("blue"), 
+                                                 col = I("red"), 
+                                                 alpha = I(.2))
+}
+```
+
+```{r, fig.align="c", message=FALSE, warning=FALSE}
+Histogram_func("APPLE INC.")
+```
+
+```{r, fig.align="c", message=FALSE, warning=FALSE}
+Histogram_func("GOOGLE INC.")
+```
+
