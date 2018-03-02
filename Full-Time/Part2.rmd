@@ -16,7 +16,7 @@ body{ /* Normal  */
 </style>
 
 # Part 2
-## Exploratory Data Analysis
+## Exploratory Data Analysis & Feature Engineering
 First I load some necessary libraries and define an evaluation function as well as a function to extract the best result from a caret object.
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE}
@@ -112,12 +112,13 @@ First of all, I would like to see which variables contain missing values:
 
 ```{r}
 data = read.csv("data_perm_take_home.csv")
+data = data[data$case_status == "Certified", ]
 sapply(data, function(x) {sum(is.na(x))})
 ```
-It seems that among `r nrow(data)` observations, `job_experience_num_months` has 27617 NAs, which indicates we might consider discarding it in the future analysis. And also, our target variable `wage_offer` has some missing values and I will handle them later.
+
+It seems that among `r nrow(data)` observations, `job_experience_num_months` has 16933 NAs, which indicates we might consider imputation in the future analysis because it's important intuitively. And also, our target variable `wage_offer` has some missing values and I will handle them later.
 
 ### Response Variable
-
 Since there are different wage units with values "Year", "Month", "Week", and "Hour", I will make them consistent as the annual salary, by assuming working 52 weeks per year, 40 hours per week. There are also some missing values in `wage_unit`.
 
 ```{r}
@@ -125,10 +126,11 @@ table(data$wage_unit)
 ```
 
 Since most of the `wage_unit` are "Hour" and "Year", I will ignore the other two. And calculate missing value if
+
 - `wage_offer` < 10,000, then `wage_unit` = "Hour"
 - `wage_offer` >= 10,000, then `wage_unit` = "Year"
 
-And also, there are 574 rows have non-finite values. From the density plot below, we find that most wage values fall around 75,000/ year. 
+From the density plot below, we find that most wage values fall around 75,000/ year. 
 
 ```{r, fig.align='center', message=FALSE, warning=FALSE}
 data = data[data$case_status == "Certified", ]
@@ -142,13 +144,16 @@ data$wage = ifelse(data$wage_unit %in% c("Year", "Month", "Week", "Day"), data$w
                    ifelse(data$wage_offer < 10000, data$wage_offer * 52 * 40, data$wage_offer))
 
 ggplot(data, aes(wage)) +
-  geom_density(color = "dodgerblue2") + xlim(0, 200000)
+  geom_density(color = "dodgerblue2", fill = "dodgerblue2", alpha = 0.5) + xlim(0, 200000)
 ```
 
 ### Predictor Variables
-First I manally filtered some predictors that might be useful for predicting `wage`, including `employer_name`, `employer_num_employees`, `employer_yr_established`, `job_education`, `job_experience_num_month`, `job_state` and `job_level`. For simplicity, let's first explore part of the predictors that I think will be important for prediction.
+Here we want to predict `wage`, which I think will do nothing with case-related variables, because `wage` actually serves as a predict for `case_status`. 
 
-**`employer_name`**
+Among the remained variables, I manally filtered some predictors that might be useful for predicting `wage`, including `employer_name`, `employer_num_employees`, `employer_yr_established`, `job_education`, `job_experience_num_month`, `job_state`, `job_level` and `employee_citizenship`. For simplicity, let's first explore part of the predictors that I think will be important for prediction.
+
+**1. `employer_name`**
+
 I plot 5 employers with most entries in the dataset, and set the remaining as "others".
 
 ```{r, echo=FALSE}
@@ -170,8 +175,89 @@ p = ggplot(dt, aes(x = "", y = A, fill = B)) +
 p
 ```
 
+**2. `employer_num_employees`**
 
-**`job_state`**
+Since there exists 1-1 mapping from `employee_name` to `employer_num_employees`, we could only consider one of them?
+
+From the scatterplot below, we notice that the distribution is completely random with no pattern. So I won't use this variable in the future.
+
+```{r, message=FALSE, warning=FALSE, fig.align="c"}
+ggplot(data, aes(x = employer_num_employees, y = wage)) +
+  geom_point(colour = "dodgerblue2", size = 1.5, alpha = 0.5) +
+  ylim(0, 250000) + xlim(0, 500000)
+```
+
+**3. `employer_yr_established`**
+
+This is a variable that uniquely corresponds to `employee_name`.
+
+This is a variable that sounds useful at the beginning. Let's explore its relationship with our target variable `wage`. From the scatterplot below, we notice that the distribution is somewhat random with no pattern. I cannot tell if to keep it or not.
+
+```{r, message=FALSE, warning=FALSE, fig.align="c"}
+ggplot(data, aes(x = employer_yr_established, y = wage)) +
+  geom_point(colour = "dodgerblue2", size = 1.5, alpha = 0.5) +
+  ylim(0, 300000)
+```
+
+**4. `job_education`**
+
+```{r}
+table(data$job_education)
+```
+
+First we know that there're 7 unique values: Bachelor's, Doctorate, Master's, None, Other, Associate's and High School. The boxplot of mean wage by job education is shown below. We notice there seems to be little difference BS, MS and PhD, but do exist some difference among others.
+
+Maybe we could consider categorizing BS, MS and PhD into one big class "BMD", and the rest remaining the same.
+
+```{r, echo=FALSE, fig.align="c", message=FALSE, warning=FALSE}
+plotdata = data
+plotdata$job_education = factor(plotdata$job_education)
+ggplot(plotdata, aes(x = job_education, y = wage)) +
+  geom_boxplot(colour = "black", fill = "#56B4E9") +
+  scale_x_discrete(name = "Job Education") +
+  scale_y_continuous(name = "Mean Wage", breaks = seq(10000, 210000, 20000), limits = c(10000, 200000)) +
+  ggtitle("Boxplot of Mean Wage by Job Education") +
+  theme(axis.line.x = element_line(size = 0.5, colour = "black"),
+        axis.line.y = element_line(size = 0.5, colour = "black"),
+        axis.line = element_line(size=1, colour = "black"),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())
+```
+
+**5. `job_experience_num_months`**
+
+***Missing Value Imputation:*** I think it should be a predictor with strong predictive power. However, there are many missing values in our dataset. I will use the simpliest Linear Regression to predict those missing values, using `job_state`, `job_education` and `wage`.
+
+```{r}
+dataLM = data
+job_experience_num_monthsLM = lm(job_experience_num_months ~ job_state + wage + job_education, data = dataLM[!is.na(dataLM$job_experience_num_months), ])
+dataLM$job_experience_num_monthsLM = predict(job_experience_num_monthsLM, dataLM)
+```
+
+Below is the histogram of the predicted values versus the shape of the known `job_experience_num_months`. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+par(mfrow = c(1, 2))
+hist(dataLM$job_experience_num_months[!is.na(dataLM$job_experience_num_months)], main='Original data, non-missing', xlab='job_experience_num_months', col='green')
+hist(dataLM$job_experience_num_monthsLM[is.na(dataLM$job_experience_num_months)], main= 'LM NA predictions', xlab='job_experience_num_months', col='orange', xlim = range(0: 200))
+```
+
+Then I replaced the NAs with predicted values in our raw dataset, and create similar scatterplot. There seems to be slight increasing trend so I will keep this for now.
+
+```{r}
+data[is.na(data$job_experience_num_months), ]$job_experience_num_months = dataLM$job_experience_num_monthsLM[is.na(data$job_experience_num_months)]
+```
+
+```{r, echo=FALSE, fig.align="c", message=FALSE, warning=FALSE}
+ggplot(data, aes(x = job_experience_num_months, y = wage)) +
+  geom_point(colour = "dodgerblue2", size = 1.5, alpha = 0.5) +
+  ylim(0, 250000) + xlim(0,50)
+```
+
+**6. `job_state`**
+
 I'm going to make a US map at a state level, with color of states representing the number of cases. 
 
 `ggplot2` provides the `map_data()` function which contains the relevant map data. `plotdata` is the resulting dataset of merging US's states and the Frequency table by state derived from our dataset.
@@ -193,7 +279,7 @@ plotdata = full_join(states, temp2, by = c("region" = "Var1"))
 
 The Frequency in California and Texas is so great that makes it hard to discern differences between other areas. I will take the log-base-10 transformation of the frequency for this map.
 
-```{r, message=FALSE, warning=FALSE, fig.align="c"}
+```{r, echo=TRUE, fig.align="c", message=FALSE, warning=FALSE}
 state_base = ggplot(data = plotdata, mapping = aes(x = long, y = lat, group = group)) + coord_fixed(1.3) + geom_polygon(color = "white", fill = "gray") 
 
 state_base + 
@@ -203,7 +289,26 @@ state_base +
                        trans = "log10")
 ```
 
-**`job_level`**
+Because I think `job_state` is an important predictor for `wage`, I also calculate the average wage by state, then plot them on map. We can notice Wyoming and Arkansas have the highest average wage amount in our dataset.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+wage_state_avg = data %>% group_by(job_state) %>% summarise(wage_state_avg = mean(wage, na.rm = TRUE))
+plotdata = full_join(states, wage_state_avg, by = c("region" = "job_state"))
+
+# Plot state average wage
+state_base + 
+  geom_polygon(data = plotdata, aes(fill = wage_state_avg), color = "white") +
+  scale_fill_gradientn(colours = rev(terrain.colors(9)),
+                       breaks = c(10, 100, 1000, 10000),
+                       trans = "log10")
+```
+```{r}
+# Have a look at two states with highest average wages
+head(wage_state_avg[order(-wage_state_avg$wage_state_avg),], 2)
+```
+
+**7. `job_level`**
+
 I will use barplot to show the job level. We can see that most people have job level 2 in our data set.
 
 ```{r, fig.align="c", message=FALSE, warning=FALSE}
@@ -213,57 +318,196 @@ temp2$Var1 = as.factor(temp2$Var1)
 
 ggplot(data = temp2, aes(x = Var1, y = Freq, color = Var1)) +
   geom_bar(stat = "identity", fill = "white") + 
-  labs(x = 'How the job level is distributed?') +
-  geom_label(stat = "identity", aes(label = Freq)) 
+  labs(x = 'How the job level is distributed?', fill = "Job Level") +
+  geom_label(stat = "identity", aes(label = Freq)) +
+  guides(color = guide_legend(title = "Job Level"))
 ```
 
+Also, boxplot is a good way to visualize the correlation between the categorical variable `job_level` and continuous variable `wage`. Notice that there are a few outliers with large values, I manually adjust the y-axis to show the results.
 
-First I manally filtered some predictors that might be useful for predicting `wage`, including `employer_name`, `employer_num_employees`, `employer_yr_established`, `job_education`, `job_experience_num_month`, `job_state` and `job_level`.
+```{r, echo=FALSE, fig.align="c", message=FALSE, warning=FALSE}
+plotdata = data
+plotdata$job_level = factor(plotdata$job_level)
+ggplot(plotdata, aes(x = job_level, y = wage)) +
+  geom_boxplot(colour = "black", fill = "#56B4E9") +
+  scale_x_discrete(name = "Job Level") +
+  scale_y_continuous(name = "Mean Wage", breaks = seq(10000, 210000, 20000), limits = c(10000, 200000)) +
+  ggtitle("Boxplot of Mean Wage by Job Level") +
+  theme(axis.line.x = element_line(size = 0.5, colour = "black"),
+        axis.line.y = element_line(size = 0.5, colour = "black"),
+        axis.line = element_line(size=1, colour = "black"),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())
+```
 
-Since there are some categorical variables in our dataset, I decided to transform some of them. For numeric variables, there are also missing values "NA", I will use KNN imputation with k = 3 to replace the missing values for simplicity.
+Although it appears increasing trend when job level increases, when I manually check the dataset, I found the definition of "job level" is different in different companies. This means `job_level = 4` could be either the highest or lowest level in a company. Let's double check the wage distribution for each level.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# create histogram
+df1 = data.frame(wage = data[data$job_level == 1,]$wage)
+p1 = ggplot(df1, aes(x = wage)) + geom_histogram(bins = 50, fill = I("blue"), col = I("red"), alpha = I(.2)) + xlim(0, 150000) +
+  ggtitle("Job Level = 1")
+
+df2 = data.frame(wage = data[data$job_level == 2,]$wage)
+p2 = ggplot(df2, aes(x = wage)) + geom_histogram(bins = 50, fill = I("blue"), col = I("red"), alpha = I(.2)) + xlim(0, 150000) +
+  ggtitle("Job Level = 2")
+
+df3 = data.frame(wage = data[data$job_level == 3,]$wage)
+p3 = ggplot(df3, aes(x = wage)) + geom_histogram(bins = 50, fill = I("blue"), col = I("red"), alpha = I(.2)) + xlim(0, 150000) +
+  ggtitle("Job Level = 3")
+
+df4 = data.frame(wage = data[data$job_level == 4,]$wage)
+p4 = ggplot(df4, aes(x = wage)) + geom_histogram(bins = 50, fill = I("blue"), col = I("red"), alpha = I(.2)) + xlim(0, 150000) +
+  ggtitle("Job Level = 4")
+
+multiplot(p1, p3, p2, p4, cols = 2)
+```
+
+There are some NAs in `job_level` as well. For simplicity, I will replace them using same strategy (LR).
+
+```{r}
+dataLM = data
+job_levelLM = lm(job_level ~ wage + job_education, data = dataLM[!is.na(dataLM$job_level), ])
+dataLM$job_level = round(predict(job_levelLM, dataLM), 0)
+
+# if predicted value > 4, set as 4
+dataLM$job_level = ifelse(dataLM$job_level > 4, 4, dataLM$job_level)
+
+# Imputation
+data[is.na(data$job_level), ]$job_level = dataLM$job_level[is.na(data$job_level)]
+```
+
+**8. `employee_citizenship`**
+
+I don't expect to see any correlation between this variable and `wage`. But let's just do some simple visualization. Although I'm not showing the exact label, it's obvious that there is no pattern. What's more, some levels only have less than 5 entries, which reduces its predictability.
+
+```{r, echo=FALSE, fig.align="c", message=FALSE, warning=FALSE}
+plotdata = data
+plotdata$employee_citizenship = factor(plotdata$employee_citizenship)
+ggplot(plotdata, aes(x = employee_citizenship, y = wage)) +
+  geom_boxplot(colour = "black", fill = "#56B4E9") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "Mean Wage", breaks = seq(10000, 210000, 20000), limits = c(10000, 200000)) +
+  ggtitle("Boxplot of Mean Wage by Citizenship") +
+  theme(axis.line = element_line(size=1, colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x=element_blank())
+```
+
+### Dataset After Cleaning
+After imputation, let's check the dataset. There is only 1 missing value in `employer_yr_established`, however, previously it turns out to be irrelevant.
+
+```{r}
+sapply(data, function(x) {sum(is.na(x))})
+```
+
+## Feature Engineering
+### Selection Based on EDA
+From the analysis and plots above, I think only `employer_name`, `job_education`, `job_experience_num_month`, `job_state` and `job_level` would impact the `wage`. 
+
+### Dummify the Data
+
+```{r}
+newdata = subset(data, select = c(job_education, 
+                                  job_experience_num_months,
+                                  job_state,
+                                  employer_num_employees, 
+                                  employer_yr_established,
+                                  job_level, wage))
+# Dummify the data
+dmy = dummyVars(" ~ .", data = newdata, fullRank = T)
+mydata = data.frame(predict(dmy, newdata = newdata))
+```
+
+### Gradient Boosting Trees for Feature Selection
+Due to time limitation, I will randomly sample rows for original data set.
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE}
-# Transform categorical data
-data$employer_name.f = factor(data$employer_name)
-data$job_education.f = factor(data$job_education)
-data$job_state.f = factor(data$job_state)
+set.seed(218)
+gbm = train(wage ~ ., data = mydata[sample(nrow(mydata), 2000), ], 
+            method = "gbm", 
+            verbose = FALSE,
+            na.action = na.pass)
 
-# Dummify the data
-newdata = subset(data, select = c(job_education, job_state,
-                                  employer_num_employees, employer_yr_established,
+head(summary(gbm), 8)
+```
+
+Combining the results of EDA and gbm model, I decide to keep `job_education`, `job_experience_num_months`, `job_level`, `employer_num_employees` and `job_state` as five most important predictors for building models in the following step.
+
+## Model
+### Cross-Validation
+The k-fold cross validation method involves splitting the dataset into k-subsets. For each subset is held out while the model is trained on all other subsets. Here I set `k = 3` for simplicity.
+
+```{r}
+newdata = subset(data, select = c(job_education, 
+                                  job_experience_num_months,
+                                  job_state,
+                                  employer_num_employees, 
                                   job_level, wage))
-
+# Dummify the data
 dmy = dummyVars(" ~ .", data = newdata, fullRank = T)
 mydata = data.frame(predict(dmy, newdata = newdata))
 
-str(mydata)
-```
-
-
-### 5-Folds Cross Validation
-The k-fold cross validation method involves splitting the dataset into k-subsets. For each subset is held out while the model is trained on all other subsets. Here I set `k = 5` for simplicity.
-
-```{r}
 set.seed(218)
-index = createDataPartition(data$wage, p = 0.7, list = FALSE)
+index = createDataPartition(mydata$wage, p = 0.7, list = FALSE)
 train = mydata[index, ]
 test = mydata[-index, ]
 
 # Cross validation
-cv_5 = trainControl(method = "cv", number = 5)
+cv_3 = trainControl(method = "cv", number = 3)
+```
+
+### Linear Regression Model
+
+```{r, message=FALSE, warning=FALSE}
+library(ModelMetrics)
+lm = train(wage ~ ., data = train, 
+           method = "lm", 
+           trControl = cv_3,
+           verbose = FALSE,
+           na.action = na.pass)
+
+# RMSE
+lm_rmse = rmse(predict(lm, newdata = test), test$wage)
+lm_rmse
+```
+
+### Support Vector Machine (Linear Kernel)
+
+```{r, message=FALSE, warning=FALSE}
+# SVM with a linear kernel
+svm = train(wage ~ ., data = train, 
+           method = "svmLinear", 
+           trControl = cv_3,
+           verbose = FALSE,
+           na.action = na.pass)
+
+# RMSE
+svm_lin_rmse = rmse(predict(svm, newdata = test), test$wage)
+```
+
+### Support Vector Machine (Radial Kernel)
+
+```{r}
+# SVM with a linear kernel
+svm = train(wage ~ ., data = train, 
+           method = "svmLinear", 
+           trControl = cv_3,
+           verbose = FALSE,
+           na.action = na.pass)
+
+# RMSE
+svm_lin_rmse = rmse(predict(svm, newdata = test), test$wage)
 ```
 
 
 
-## Feature Engineering
-The goal of this feature engineering is to extract the maximum information from the available features so as to maximize our ability to predict or categorize unknown data.
 
-### Data Visualization
-The response variable is `label` and takes values `` and ``. There are  predictors in our dataset, so we first explore the relationship of those feature variables with the response variable.
-
-```{r, echo=FALSE, fig.align="c", fig.height=9, fig.width=12, message=FALSE}
-doPlots(newdata, fun = plotHist, ii = c(1, 5), ncol = 1)
-```
 
 
 ### Variable Selection
