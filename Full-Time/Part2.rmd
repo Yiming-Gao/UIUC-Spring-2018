@@ -1,0 +1,375 @@
+---
+title: "Cyence Data Exercise"
+author: "Yiming Gao"
+date: "2/18/2018"
+output:
+  html_document:
+    theme: readable
+    toc: true
+    toc_float: true
+---
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 15px;
+  }
+</style>
+
+# Part 2
+## Exploratory Data Analysis
+First I load some necessary libraries and define an evaluation function as well as a function to extract the best result from a caret object.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(data.table)
+library(testthat)
+library(gridExtra)
+library(corrplot)
+library(GGally)
+library(ggplot2)
+library(e1071)
+library(dplyr)
+library(readr)
+library(caret)
+library(MASS)
+library(Rtsne)
+library(nnet)
+library(tidyverse)
+library(anomalyDetection)
+library(pROC)
+library(mlbench)
+library(mice)
+library(Hmisc) # Imputation missing values with mean/ median/ mode
+
+# extract the row with the best tuning parameters
+get_best_result = function(caret_fit) {
+  best_result = caret_fit$results[as.numeric(rownames(caret_fit$bestTune)), ]
+  rownames(best_result) = NULL
+  best_result
+}
+
+# Helper Functions
+plotHist <- function(data_in, i) {
+  data <- data.frame(x=data_in[[i]])
+  p <- ggplot(data=data, aes(x=factor(x))) + stat_count() + xlab(colnames(data_in)[i]) + theme_light() + 
+    theme(axis.text.x = element_text(angle = 90, hjust =1))
+  return (p)
+}
+
+doPlots <- function(data_in, fun, ii, ncol=3) {
+  pp <- list()
+  for (i in ii) {
+    p <- fun(data_in=data_in, i=i)
+    pp <- c(pp, list(p))
+  }
+  do.call("grid.arrange", c(pp, ncol=ncol))
+}
+
+plotDen <- function(data_in, i){
+  data <- data.frame(x=data_in[[i]])
+  p <- ggplot(data= data) + geom_line(aes(x = x), stat = 'density', size = 1,alpha = 1.0) +
+    xlab(paste0((colnames(data_in)[i]), '\n', 'Skewness: ',round(skewness(data_in[[i]], na.rm = TRUE), 2))) + theme_light() 
+  return(p)
+}
+
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+
+First of all, I would like to see which variables contain missing values:
+
+```{r}
+data = read.csv("data_perm_take_home.csv")
+sapply(data, function(x) {sum(is.na(x))})
+```
+It seems that among `r nrow(data)` observations, `job_experience_num_months` has 27617 NAs, which indicates we might consider discarding it in the future analysis. And also, our target variable `wage_offer` has some missing values and I will handle them later.
+
+### Response Variable
+
+Since there are different wage units with values "Year", "Month", "Week", and "Hour", I will make them consistent as the annual salary, by assuming working 52 weeks per year, 40 hours per week. There are also some missing values in `wage_unit`.
+
+```{r}
+table(data$wage_unit)
+```
+
+Since most of the `wage_unit` are "Hour" and "Year", I will ignore the other two. And calculate missing value if
+- `wage_offer` < 10,000, then `wage_unit` = "Hour"
+- `wage_offer` >= 10,000, then `wage_unit` = "Year"
+
+And also, there are 574 rows have non-finite values. From the density plot below, we find that most wage values fall around 75,000/ year. 
+
+```{r, fig.align='center', message=FALSE, warning=FALSE}
+data = data[data$case_status == "Certified", ]
+
+data$wage = ifelse(data$wage_unit == "Year", data$wage_offer,
+                   ifelse(data$wage_unit == "Month", data$wage_offer * 12, 
+                          ifelse(data$wage_unit == "Week", data$wage_offer * 52, 
+                                 data$wage_offer * 40 * 52)))
+# Imputation of missing values
+data$wage = ifelse(data$wage_unit %in% c("Year", "Month", "Week", "Day"), data$wage,
+                   ifelse(data$wage_offer < 10000, data$wage_offer * 52 * 40, data$wage_offer))
+
+ggplot(data, aes(wage)) +
+  geom_density(color = "dodgerblue2") + xlim(0, 200000)
+```
+
+### Predictor Variables
+First I manally filtered some predictors that might be useful for predicting `wage`, including `employer_name`, `employer_num_employees`, `employer_yr_established`, `job_education`, `job_experience_num_month`, `job_state` and `job_level`. For simplicity, let's first explore part of the predictors that I think will be important for prediction.
+
+**`employer_name`**
+I plot 5 employers with most entries in the dataset, and set the remaining as "others".
+
+```{r, echo=FALSE}
+temp = as.data.frame(table(data$employer_name))
+top5 = temp[order(-temp$Freq), ][1:5, ]
+dt = data.frame(A = c(top5$Freq[1], top5$Freq[2], top5$Freq[3], top5$Freq[4], top5$Freq[5], nrow(data) - sum(top5$Freq)), B = c(as.vector(top5$Var1), "Others"))
+myLabel = as.vector(dt$B) 
+myLabel = paste(myLabel, " (", round(dt$A / sum(dt$A) * 100, 2), "%)", sep = "")  
+
+
+p = ggplot(dt, aes(x = "", y = A, fill = B)) + 
+  geom_bar(stat = "identity", width = 1) +    
+  coord_polar(theta = "y") + 
+  labs(x = "", y = "", title = "") + 
+  theme(axis.ticks = element_blank()) + 
+  theme(legend.title = element_blank(), legend.position = "top") + 
+  scale_fill_discrete(breaks = dt$B, labels = myLabel) +
+  theme(axis.text.x = element_blank()) 
+p
+```
+
+
+**`job_state`**
+I'm going to make a US map at a state level, with color of states representing the number of cases. 
+
+`ggplot2` provides the `map_data()` function which contains the relevant map data. `plotdata` is the resulting dataset of merging US's states and the Frequency table by state derived from our dataset.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(ggmap)
+library(maps)
+library(mapdata)
+library(RColorBrewer)
+```
+
+```{r, fig.align="c", message=FALSE, warning=FALSE, include=FALSE}
+states = map_data("state")
+states$region = toupper(states$region)
+temp1 = as.data.frame(table(data$job_state))
+temp2 = temp1[order(-temp1$Freq), ]
+plotdata = full_join(states, temp2, by = c("region" = "Var1"))
+```
+
+The Frequency in California and Texas is so great that makes it hard to discern differences between other areas. I will take the log-base-10 transformation of the frequency for this map.
+
+```{r, message=FALSE, warning=FALSE, fig.align="c"}
+state_base = ggplot(data = plotdata, mapping = aes(x = long, y = lat, group = group)) + coord_fixed(1.3) + geom_polygon(color = "white", fill = "gray") 
+
+state_base + 
+  geom_polygon(data = plotdata, aes(fill = Freq), color = "white") +
+  scale_fill_gradientn(colours = rev(terrain.colors(7)),
+                       breaks = c(10, 100, 1000, 10000),
+                       trans = "log10")
+```
+
+**`job_level`**
+I will use barplot to show the job level. We can see that most people have job level 2 in our data set.
+
+```{r, fig.align="c", message=FALSE, warning=FALSE}
+temp1 = as.data.frame(table(data$job_level))
+temp2 = temp1[order(-temp1$Freq), ]
+temp2$Var1 = as.factor(temp2$Var1)
+
+ggplot(data = temp2, aes(x = Var1, y = Freq, color = Var1)) +
+  geom_bar(stat = "identity", fill = "white") + 
+  labs(x = 'How the job level is distributed?') +
+  geom_label(stat = "identity", aes(label = Freq)) 
+```
+
+
+First I manally filtered some predictors that might be useful for predicting `wage`, including `employer_name`, `employer_num_employees`, `employer_yr_established`, `job_education`, `job_experience_num_month`, `job_state` and `job_level`.
+
+Since there are some categorical variables in our dataset, I decided to transform some of them. For numeric variables, there are also missing values "NA", I will use KNN imputation with k = 3 to replace the missing values for simplicity.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+# Transform categorical data
+data$employer_name.f = factor(data$employer_name)
+data$job_education.f = factor(data$job_education)
+data$job_state.f = factor(data$job_state)
+
+# Dummify the data
+newdata = subset(data, select = c(job_education, job_state,
+                                  employer_num_employees, employer_yr_established,
+                                  job_level, wage))
+
+dmy = dummyVars(" ~ .", data = newdata, fullRank = T)
+mydata = data.frame(predict(dmy, newdata = newdata))
+
+str(mydata)
+```
+
+
+### 5-Folds Cross Validation
+The k-fold cross validation method involves splitting the dataset into k-subsets. For each subset is held out while the model is trained on all other subsets. Here I set `k = 5` for simplicity.
+
+```{r}
+set.seed(218)
+index = createDataPartition(data$wage, p = 0.7, list = FALSE)
+train = mydata[index, ]
+test = mydata[-index, ]
+
+# Cross validation
+cv_5 = trainControl(method = "cv", number = 5)
+```
+
+
+
+## Feature Engineering
+The goal of this feature engineering is to extract the maximum information from the available features so as to maximize our ability to predict or categorize unknown data.
+
+### Data Visualization
+The response variable is `label` and takes values `` and ``. There are  predictors in our dataset, so we first explore the relationship of those feature variables with the response variable.
+
+```{r, echo=FALSE, fig.align="c", fig.height=9, fig.width=12, message=FALSE}
+doPlots(newdata, fun = plotHist, ii = c(1, 5), ncol = 1)
+```
+
+
+### Variable Selection
+In this part I try to do some variable selection before building up and comparing the models.
+
+First, I fit a boosted tree model and create a plot showing feature importance. It might take some time to run the algorithm.
+
+```{r, echo=TRUE, fig.align="c", fig.height=8, message=FALSE, warning=FALSE}
+# gbm_grid = expand.grid(interaction.depth = c(1, 2),
+#                        n.trees = c(500, 1000, 1500),
+#                        shrinkage = c(0.001, 0.01, 0.1),
+#                        n.minobsinnode = 10)
+
+gbm = train(wage ~ ., data = train, 
+            method = "gbm", 
+            preProcess = "scale",
+            trControl = cv_5,
+            verbose = FALSE,
+            na.action = na.pass)
+
+var_imp = summary(gbm)
+
+head(var_imp, 20)
+```
+
+It takes too long to run. We can also try stepwise regression. But from the result, we can summarize that `job_level`, `job_state`, `job_education`, `employer_num_employees` and `employer_yr_established` are the 5 most predictive variables at this moment.
+
+Due to time limitation, I will simply use the GBM model for prediction and evaluate the model.
+
+```{r, message=FALSE, warning=FALSE}
+# prediction
+head(predict(gbm, newdata = test))
+
+# RMSE
+library(ModelMetrics)
+rmse(predict(gbm, newdata = test), test$wage)
+```
+
+
+### Principal Component Analysis (Future work)
+The principal components are supplied with normalized version of original predictors. This is because, the original predictors may have different scales.
+
+**Drawback:** We may lose model interpretability.
+
+## Model Building (Future work)
+- K-Nearest Neighbors (KNN)
+- Decision Tree
+- Support Vector Machine (SVM) **Tried**
+- Linear Regression **Tried**
+- Multilayer Perceptron Neural Network (MIP)
+
+**Linear Regression**
+```{r, message=FALSE, warning=FALSE}
+lm = train(wage ~ ., data = train, 
+           method = "lm", 
+           preProcess = "scale",
+           trControl = cv_5,
+           verbose = FALSE,
+           na.action = na.pass)
+
+# prediction
+head(predict(lm, newdata = test))
+
+# RMSE
+rmse(predict(lm, newdata = test), test$wage)
+```
+
+
+
+```{r, message=FALSE, warning=FALSE}
+# SVM with a linear kernel
+svm = train(wage ~ ., data = train, 
+           method = "svmLinear", 
+           preProcess = "scale",
+           trControl = cv_5,
+           verbose = FALSE,
+           na.action = na.pass)
+
+# prediction
+head(predict(svm, newdata = test))
+
+# RMSE
+rmse(predict(svm, newdata = test), test$wage)
+```
+
+### Evaluation
+
+| Model  | RMSE |
+|:----------:|:---------:|
+| Linear Regression   |  155405.6   |
+| Linear SVM |  153899.3   |
+| Gradient Boosted Trees | 154377.5      |
+
+Among all the models I tried, `Linear SVM` seems to perform the best because it has the least root mean squares error. However, there's not too much difference between those models, it's highly possible just due to random variation. Thus we can try a lot of other models including neural networks, which I don't have enough time to explore for this challenge.
+
+I think this model will be somehow representative of the entire U.S. population because we're evaluating the model based on cross-validation results, which reduces the risk of overfitting.
+
+## Future Work
+If I were given more time, I could try
+- K-Nearest Neighbors (KNN)
+- Decision Tree
+- Multilayer Perceptron Neural Network (MIP)
+
+and other regression algorithms.
+
+## Sidenotes
+These are some of my analysis and thoughts of the dataset. I'm not sure if these make sense because of the limit of my background knowledge. But I'm a quick learner and more than willing to accept new knowledge. 
+
+Please don’t hesitate to share any insights with me no matter you’d like to proceed my application or not, I would be really appreciated!
