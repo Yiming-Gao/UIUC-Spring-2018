@@ -425,7 +425,7 @@ mydata = data.frame(predict(dmy, newdata = newdata))
 ```
 
 ### Gradient Boosting Trees for Feature Selection
-Due to time limitation, I will randomly sample rows for original data set.
+Due to time limitation, I will randomly sample 2000 rows for original data set.
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE}
 set.seed(218)
@@ -454,7 +454,7 @@ newdata = subset(data, select = c(job_education,
 # mydata = data.frame(predict(dmy, newdata = newdata))
 
 set.seed(218)
-index = createDataPartition(newdata$wage, p = 0.7, list = FALSE)
+index = createDataPartition(newdata$wage, p = 0.3, list = FALSE)
 train = mydata[index, ]
 test = mydata[-index, ]
 
@@ -478,105 +478,88 @@ lm_rmse
 ```
 
 ### K-Nearest Neighbors
+I tuned the parameter `k` with 10 values, and visualize the predicted RMSE versus the number of neighbors.
 
 ```{r}
 # KNN
 knn = train(wage ~ ., data = train, 
             method = "knn", 
-            trControl = cv_3,
             verbose = FALSE,
+            tuneLength = 10,
             na.action = na.pass)
+plot(knn)
+get_best_result(knn)
 
 # RMSE
-rmse(predict(svm, newdata = test), test$wage)
+knn_rmse = rmse(predict(knn, newdata = test), test$wage)
+knn_rmse
 ```
 
+It's obvious that training RMSE decreases as the the number of neighbors increases. The best result given by this training process has `k = 23`.
 
+For the algorithms below, I won't train model with `cv_3` due to the limitation of time and memory.
 
 ### Support Vector Machine (Linear Kernel)
-I won't train this model with `cv_3` due to the limitation of time and memory.
+I also tried SVR with radial kernel and produced little improvement. It sounds reasonable to me because I don't see any non-linear relationship in our training set as we have many categorical predictors.
 
 ```{r, message=FALSE, warning=FALSE}
 # SVM with a linear kernel
-svm = train(wage ~ ., data = train, 
+svm = train(wage ~ ., data = train[1:500, ], 
            method = "svmLinear", 
            verbose = FALSE,
            na.action = na.pass)
 
 # RMSE
-rmse(predict(svm, newdata = test), test$wage)
+svm_rmse = rmse(predict(svm, newdata = test), test$wage)
+svm_rmse
 ```
 
-### Neural Network
+### Simple Tree Model
+I tuned the parameter `maxdepth` with caret library.
+
+```{r}
+# SVM with a linear kernel
+ctree = train(wage ~ ., data = train[1:500, ], 
+              method = "ctree2", 
+              verbose = FALSE,
+              tuneGrid = expand.grid(maxdepth = seq(15, 50,5)), 
+              na.action = na.pass)
+plot(ctree)
+
+# RMSE
+ctree_rmse = rmse(predict(ctree, newdata = test), test$wage)
+ctree_rmse
+```
+
+
+### Random Forest
 I won't train this model with `cv_3` due to the limitation of time and memory.
 
 ```{r}
 # NN
-nn = train(wage ~ ., data = train[1:10000, ], 
-           method = "nnet", 
+rf = train(wage ~ ., data = train[1:100, ], 
+           method = "rf", 
            verbose = FALSE,
            na.action = na.pass)
 
 # RMSE
-rmse(predict(nn, newdata = test), test$wage)
+rf_rmse = rmse(predict(rf, newdata = test), test$wage)
+rf_rmse
 ```
 
+### Principal Component Analysis
+PCA doesn't work very well on categorical data (state, job_education,...), and there's no need to perform PCA for this analysis because we don't have that much correlated features in the dataset.
 
-
-
-### Principal Component Analysis (Future work)
-The principal components are supplied with normalized version of original predictors. This is because, the original predictors may have different scales.
-
-**Drawback:** We may lose model interpretability.
-
-## Model Building (Future work)
-- K-Nearest Neighbors (KNN)
-- Decision Tree
-- Support Vector Machine (SVM) **Tried**
-- Linear Regression **Tried**
-- Multilayer Perceptron Neural Network (MIP)
-
-**Linear Regression**
-```{r, message=FALSE, warning=FALSE}
-lm = train(wage ~ ., data = train, 
-           method = "lm", 
-           preProcess = "scale",
-           trControl = cv_5,
-           verbose = FALSE,
-           na.action = na.pass)
-
-# prediction
-head(predict(lm, newdata = test))
-
-# RMSE
-rmse(predict(lm, newdata = test), test$wage)
-```
-
-
-
-```{r, message=FALSE, warning=FALSE}
-# SVM with a linear kernel
-svm = train(wage ~ ., data = train, 
-           method = "svmLinear", 
-           preProcess = "scale",
-           trControl = cv_5,
-           verbose = FALSE,
-           na.action = na.pass)
-
-# prediction
-head(predict(svm, newdata = test))
-
-# RMSE
-rmse(predict(svm, newdata = test), test$wage)
-```
 
 ### Evaluation
 
 | Model  | RMSE |
 |:----------:|:---------:|
-| Linear Regression   |  155405.6   |
-| Linear SVM |  153899.3   |
-| Gradient Boosted Trees | 154377.5      |
+| Linear Regression   |  `r lm_rmse`|
+|KNN | `r knn_rmse`  |
+| Tree |`r ctree_rmse`  |
+| Support Vector Machine |`r svm_rmse`  |
+| Random Forest |`r rf_rmse`  |
 
 Among all the models I tried, `Linear SVM` seems to perform the best because it has the least root mean squares error. However, there's not too much difference between those models, it's highly possible just due to random variation. Thus we can try a lot of other models including neural networks, which I don't have enough time to explore for this challenge.
 
