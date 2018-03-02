@@ -449,12 +449,12 @@ newdata = subset(data, select = c(job_education,
                                   job_state,
                                   employer_num_employees, 
                                   job_level, wage))
-# Dummify the data
-dmy = dummyVars(" ~ .", data = newdata, fullRank = T)
-mydata = data.frame(predict(dmy, newdata = newdata))
+# # Dummify the data
+# dmy = dummyVars(" ~ .", data = newdata, fullRank = T)
+# mydata = data.frame(predict(dmy, newdata = newdata))
 
 set.seed(218)
-index = createDataPartition(mydata$wage, p = 0.7, list = FALSE)
+index = createDataPartition(newdata$wage, p = 0.7, list = FALSE)
 train = mydata[index, ]
 test = mydata[-index, ]
 
@@ -477,74 +477,51 @@ lm_rmse = rmse(predict(lm, newdata = test), test$wage)
 lm_rmse
 ```
 
-### Support Vector Machine (Linear Kernel)
-
-```{r, message=FALSE, warning=FALSE}
-# SVM with a linear kernel
-svm = train(wage ~ ., data = train, 
-           method = "svmLinear", 
-           trControl = cv_3,
-           verbose = FALSE,
-           na.action = na.pass)
-
-# RMSE
-svm_lin_rmse = rmse(predict(svm, newdata = test), test$wage)
-```
-
-### Support Vector Machine (Radial Kernel)
+### K-Nearest Neighbors
 
 ```{r}
-# SVM with a linear kernel
-svm = train(wage ~ ., data = train, 
-           method = "svmLinear", 
-           trControl = cv_3,
-           verbose = FALSE,
-           na.action = na.pass)
-
-# RMSE
-svm_lin_rmse = rmse(predict(svm, newdata = test), test$wage)
-```
-
-
-
-
-
-
-### Variable Selection
-In this part I try to do some variable selection before building up and comparing the models.
-
-First, I fit a boosted tree model and create a plot showing feature importance. It might take some time to run the algorithm.
-
-```{r, echo=TRUE, fig.align="c", fig.height=8, message=FALSE, warning=FALSE}
-# gbm_grid = expand.grid(interaction.depth = c(1, 2),
-#                        n.trees = c(500, 1000, 1500),
-#                        shrinkage = c(0.001, 0.01, 0.1),
-#                        n.minobsinnode = 10)
-
-gbm = train(wage ~ ., data = train, 
-            method = "gbm", 
-            preProcess = "scale",
-            trControl = cv_5,
+# KNN
+knn = train(wage ~ ., data = train, 
+            method = "knn", 
+            trControl = cv_3,
             verbose = FALSE,
             na.action = na.pass)
 
-var_imp = summary(gbm)
-
-head(var_imp, 20)
+# RMSE
+rmse(predict(svm, newdata = test), test$wage)
 ```
 
-It takes too long to run. We can also try stepwise regression. But from the result, we can summarize that `job_level`, `job_state`, `job_education`, `employer_num_employees` and `employer_yr_established` are the 5 most predictive variables at this moment.
 
-Due to time limitation, I will simply use the GBM model for prediction and evaluate the model.
+
+### Support Vector Machine (Linear Kernel)
+I won't train this model with `cv_3` due to the limitation of time and memory.
 
 ```{r, message=FALSE, warning=FALSE}
-# prediction
-head(predict(gbm, newdata = test))
+# SVM with a linear kernel
+svm = train(wage ~ ., data = train, 
+           method = "svmLinear", 
+           verbose = FALSE,
+           na.action = na.pass)
 
 # RMSE
-library(ModelMetrics)
-rmse(predict(gbm, newdata = test), test$wage)
+rmse(predict(svm, newdata = test), test$wage)
 ```
+
+### Neural Network
+I won't train this model with `cv_3` due to the limitation of time and memory.
+
+```{r}
+# NN
+nn = train(wage ~ ., data = train[1:10000, ], 
+           method = "nnet", 
+           verbose = FALSE,
+           na.action = na.pass)
+
+# RMSE
+rmse(predict(nn, newdata = test), test$wage)
+```
+
+
 
 
 ### Principal Component Analysis (Future work)
