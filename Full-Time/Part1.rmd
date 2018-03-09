@@ -111,6 +111,7 @@ print(temp[order(-temp$Freq), ][1, ])
 ```
 
 ## Question 5
+
 **Write a function that plots a histogram with 50 bins of the duration between from case_received_date to decision_date for any given employeer_name. Use the function to plot for "APPLE INC." and "GOOGLE INC."**
 
 ```{r}
