@@ -1,17 +1,17 @@
 library(leaflet)
 library(dplyr)
 
-IL_Renter_Crime = read.csv("~/Yiming/Spring2018/IL_Renter_Crime.csv", header = TRUE)
+IL_Renter_Crime = read.csv("/san-data/usecase/pca_projects/Tenant_Terr_Study/Yiming/IL_Renter_Crime.csv", header = TRUE)
 
 # Filter out missing values
-IL_Renter_Crime = IL_Renter_Crime[, -seq(1, 5)] %>% 
-  filter(CASE_INCURRED_CLAIM_CNT_NCAT > 0) %>%
+IL_Renter_Crime = IL_Renter_Crime[, -c(1, 2, 8)] %>% 
+  # filter(CASE_INCURRED_CLAIM_CNT_NCAT > 0) %>%
   na.omit()
 
 # Add Freqency, Severity, Pure Premium
 IL_Renter_Crime$Freq = IL_Renter_Crime$CASE_INCURRED_CLAIM_CNT_NCAT/ IL_Renter_Crime$AIY # Frequency
 IL_Renter_Crime$Sev = IL_Renter_Crime$CASE_INCURRED_NCAT/ IL_Renter_Crime$CASE_INCURRED_CLAIM_CNT_NCAT # Severity
-IL_Renter_Crime$PP = IL_Renter_Crime$Freq * IL_Renter_Crime$Sev # Pure Premium
+IL_Renter_Crime$PP = IL_Renter_Crime$CASE_INCURRED_NCAT/ IL_Renter_Crime$AIY # Pure Premium
 
 # Add Relativities
 IL_Renter_Crime$Loss_Rel = IL_Renter_Crime$CASE_INCURRED_NCAT/ mean(IL_Renter_Crime$CASE_INCURRED_NCAT, na.rm = TRUE)
@@ -54,85 +54,6 @@ rm(y)
 rm(Gini)
 
 
-# (2) Sort by Loss_Rel
-IL_Renter_Crime_sorted_Loss_Rel = IL_Renter_Crime[order(IL_Renter_Crime$Loss_Rel),]
-
-# Add cumulative column
-IL_Renter_Crime_sorted_Loss_Rel = IL_Renter_Crime_sorted_Loss_Rel %>% mutate(
-  Cum_Prem = cumsum(.$NO_LOC_PREM) / sum(.$NO_LOC_PREM),
-  Cum_Loss = cumsum(.$CASE_INCURRED_NCAT)/ sum(.$CASE_INCURRED_NCAT)
-)
-
-# Gini Index calculation
-x = IL_Renter_Crime_sorted_Loss_Rel$Cum_Prem
-y = IL_Renter_Crime_sorted_Loss_Rel$Cum_Loss
-Gini = 2 * (0.5 - sum((y + lag(y))/2 * (x - lag(x)), na.rm = TRUE))
-
-# Plot
-plot(IL_Renter_Crime_sorted_Loss_Rel$Cum_Prem, IL_Renter_Crime_sorted_Loss_Rel$Cum_Loss, col = "red", xlab = "No-loc Premium Sorted by Loss Relativities", ylab = "")
-par(new = T)
-plot(IL_Renter_Crime_sorted_Loss_Rel$Cum_Prem, IL_Renter_Crime_sorted_Loss_Rel$Cum_Prem, xlab = "", ylab = "", title(main = paste("Gini Index =", paste0(formatC(100 * Gini, format = "f", digits = 2), "%"))))
-
-
-# Remove temporary variables
-rm(x)
-rm(y)
-rm(Gini)
-
-
-
-# (3) Sort by Freq_Rel
-IL_Renter_Crime_sorted_Freq_Rel = IL_Renter_Crime[order(IL_Renter_Crime$Freq_Rel),]
-
-# Add cumulative column
-IL_Renter_Crime_sorted_Freq_Rel = IL_Renter_Crime_sorted_Freq_Rel %>% mutate(
-  Cum_Prem = cumsum(.$NO_LOC_PREM) / sum(.$NO_LOC_PREM),
-  Cum_Loss = cumsum(.$CASE_INCURRED_NCAT)/ sum(.$CASE_INCURRED_NCAT)
-)
-
-# Gini Index calculation
-x = IL_Renter_Crime_sorted_Freq_Rel$Cum_Prem
-y = IL_Renter_Crime_sorted_Freq_Rel$Cum_Loss
-Gini = 2 * (0.5 - sum((y + lag(y))/2 * (x - lag(x)), na.rm = TRUE))
-
-# Plot
-plot(IL_Renter_Crime_sorted_Freq_Rel$Cum_Prem, IL_Renter_Crime_sorted_Freq_Rel$Cum_Loss, col = "red", xlab = "No-loc Premium Sorted by Frequency Relativities", ylab = "")
-par(new = T)
-plot(IL_Renter_Crime_sorted_Freq_Rel$Cum_Prem, IL_Renter_Crime_sorted_Freq_Rel$Cum_Prem, xlab = "", ylab = "", title(main = paste("Gini Index =", paste0(formatC(100 * Gini, format = "f", digits = 2), "%"))))
-
-
-# Remove temporary variables
-rm(x)
-rm(y)
-rm(Gini)
-
-
-
-# (4) Sort by Sev_Rel
-IL_Renter_Crime_sorted_Sev_Rel = IL_Renter_Crime[order(IL_Renter_Crime$Sev_Rel),]
-
-# Add cumulative column
-IL_Renter_Crime_sorted_Sev_Rel = IL_Renter_Crime_sorted_Sev_Rel %>% mutate(
-  Cum_Prem = cumsum(.$NO_LOC_PREM) / sum(.$NO_LOC_PREM),
-  Cum_Loss = cumsum(.$CASE_INCURRED_NCAT)/ sum(.$CASE_INCURRED_NCAT)
-)
-
-# Gini Index calculation
-x = IL_Renter_Crime_sorted_Sev_Rel$Cum_Prem
-y = IL_Renter_Crime_sorted_Sev_Rel$Cum_Loss
-Gini = 2 * (0.5 - sum((y + lag(y))/2 * (x - lag(x)), na.rm = TRUE))
-
-# Plot
-plot(IL_Renter_Crime_sorted_Sev_Rel$Cum_Prem, IL_Renter_Crime_sorted_Sev_Rel$Cum_Loss, col = "red", xlab = "No-loc Premium Sorted by Severity Relativities", ylab = "")
-par(new = T)
-plot(IL_Renter_Crime_sorted_Sev_Rel$Cum_Prem, IL_Renter_Crime_sorted_Sev_Rel$Cum_Prem, xlab = "", ylab = "", title(main = paste("Gini Index =", paste0(formatC(100 * Gini, format = "f", digits = 2), "%"))))
-
-
-# Remove temporary variables
-rm(x)
-rm(y)
-rm(Gini)
-
 
 # (5) Sort by PP_Rel
 IL_Renter_Crime_sorted_PP_Rel = IL_Renter_Crime[order(IL_Renter_Crime$PP_Rel),]
@@ -173,18 +94,26 @@ rm(Gini)
 
 
 
-######################## Test on 2015 Data ##########################
-IL_Renter_Crime_New = read.csv("~/Yiming/Spring2018/IL_Renter_Crime_New.csv", header = TRUE)
+######################## MSE: Test on 2015 Data ##########################
+IL_Renter_Crime_New = read.csv("~/Yiming/Spring2018/IL_Renter_2015_allperil.csv", header = TRUE)
 
 # Filter out missing values
-IL_Renter_Crime_New = IL_Renter_Crime_New %>% 
-  filter(CASE_INCURRED_CLAIM_CNT_NCAT > 0) %>%
-  na.omit()
+# Aggregate by GRID_ID (not separated by peril)
+IL_Renter_Crime_New = IL_Renter_Crime_New  %>%
+  group_by(GRID_ID) %>%
+  summarise(
+    NON_TENANT_LRF = mean(CRED_IND_FCTR),
+    AIY = mean(AIY),
+    EARNED_PREM = mean(earned_prem),
+    CASE_INCURRED_NCAT = sum(CASE_INCURRED_NCAT),
+    CASE_INCURRED_CLAIM_CNT_NCAT = sum(CASE_INCURRED_CLAIM_CNT_NCAT)
+    ) %>% 
+  na.omit() # 1809 obs
 
 # Add Freqency, Severity, Pure Premium
 IL_Renter_Crime_New$Freq_New = IL_Renter_Crime_New$CASE_INCURRED_CLAIM_CNT_NCAT/ IL_Renter_Crime_New$AIY # Frequency
 IL_Renter_Crime_New$Sev_New = IL_Renter_Crime_New$CASE_INCURRED_NCAT/ IL_Renter_Crime_New$CASE_INCURRED_CLAIM_CNT_NCAT # Severity
-IL_Renter_Crime_New$PP_New = IL_Renter_Crime_New$Freq * IL_Renter_Crime_New$Sev # Pure Premium
+IL_Renter_Crime_New$PP_New = IL_Renter_Crime_New$CASE_INCURRED_CLAIM_CNT_NCAT * IL_Renter_Crime_New$AIY # Pure Premium
 
 
 # Add Relativities
@@ -193,9 +122,6 @@ IL_Renter_Crime_New$Freq_Rel_New = IL_Renter_Crime_New$Freq_New/ mean(IL_Renter_
 IL_Renter_Crime_New$Sev_Rel_New = IL_Renter_Crime_New$Sev_New/ mean(IL_Renter_Crime_New$Sev_New, na.rm = TRUE)
 IL_Renter_Crime_New$PP_Rel_New = IL_Renter_Crime_New$PP_New/ mean(IL_Renter_Crime_New$PP_New, na.rm = TRUE)
 
-
-# Join 10 years' data with 2015 loss prem table
-Crime_New = inner_join(IL_Renter_Crime[, c(1, 8, 9, 14, 15, 16, 17)], IL_Renter_Crime_New[, c(6, 13, 14, 15, 16, 17, 18, 19)], by = "GRID_ID")
 
 
 ## Tentative Analysis
