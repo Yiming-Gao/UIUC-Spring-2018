@@ -1,0 +1,48 @@
+---
+title: "CIFAR-10 Image Classification with CNN"
+author: "Yiming Gao (yimingg2)"
+date: "3/20/2018"
+linestretch: 1.2
+fontsize: 11pt
+output:
+  pdf_document: 
+    toc: true
+    number_sections: true
+---
+\newpage
+# Data Set
+## Introduction
+The dataset I chose for HW2 is the CIFAR-10 dataset, which consists of 60000 32*32 color images in 10 classes, with 6000 images per class. There are 50000 training images and 10000 test images. (https://www.cs.toronto.edu/~kriz/cifar.html)
+
+The dataset is divided into five training batches and one test batch, each with 10000 images. The test batch contains exactly 1000 randomly-selected images from each class. The training batches contain the remaining images in random order, but some training batches may contain more images from one class than another. Between them, the training batches contain exactly 5000 images from each class. 
+
+Here are the classes in the dataset, as well as 10 random images from each:
+
+\begin{center}
+\includegraphics[width=12cm]{p1.PNG}
+\end{center}
+
+The classes are completely mutually exclusive. There is no overlap between automobiles and trucks. "Automobile" includes sedans, SUVs, things of that sort. "Truck" includes only big trucks. Neither includes pickup trucks.
+
+## Goal
+In this homework, I will use R to ingest data, train a model, and evaluate it on a test set. 
+
+# Deep Learning
+## KernelKNN and HOG (Histogram of Oriented Gradients)
+
+```{r}
+# library(keras)
+# install_keras(method = "conda")
+cifar = read.table(unz("cifar_10.zip", "cifar_10.csv"), nrows = 60000, header = T, 
+                   quote = "\"", sep = ",")
+```
+
+Let's first have a look at the dataset.
+
+```{r}
+X = cifar[, -ncol(cifar)]
+dim(X)
+unique(cifar[,1025])
+```
+
+## Keras
