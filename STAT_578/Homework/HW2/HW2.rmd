@@ -24,25 +24,47 @@ Here are the classes in the dataset, as well as 10 random images from each:
 
 The classes are completely mutually exclusive. There is no overlap between automobiles and trucks. "Automobile" includes sedans, SUVs, things of that sort. "Truck" includes only big trucks. Neither includes pickup trucks.
 
-## Goal
+## Model Architecture
+
+
+## Goal& Approach
 In this homework, I will use R to ingest data, train a model, and evaluate it on a test set. 
 
-# Deep Learning
-## KernelKNN and HOG (Histogram of Oriented Gradients)
+I build a dense CNN network for classifying the images into 10 classes, which are airplane, automobile, cat, deer, dog, frog, horse, ship, and truck. The usual method for training a network to perform N-way classification is multinomial logistic regression, known as softmax regression.
 
-```{r}
-# library(keras)
-# install_keras(method = "conda")
-cifar = read.table(unz("cifar_10.zip", "cifar_10.csv"), nrows = 60000, header = T, 
-                   quote = "\"", sep = ",")
+**Softmax** activation is used at the end which applies a softmax nonlinearity to the output of the network and calculates the **cross-entropy** loss between the probabilities calculated using the softmax activation function. For regularization, we also apply the usual weight decay losses to all learned variables.
+
+### Data Processing
+
+```{r, message=FALSE, warning=FALSE}
+library(reticulate)
+library(tensorflow)
+library(keras)
 ```
 
-Let's first have a look at the dataset.
+Then we create training and test sets, and check the dimensions of them. From the output below, we know that we have 50000 training images and 10000 test images.
 
 ```{r}
-X = cifar[, -ncol(cifar)]
-dim(X)
-unique(cifar[,1025])
+cifar = dataset_cifar10()
+
+# Training Data
+train_x = cifar$train$x / 255
+train_y = to_categorical(cifar$train$y, num_classes = 10)
+
+# Test Data
+test_x = cifar$test$x / 255
+test_y = to_categorical(cifar$test$y, num_classes = 10)
+
+# Check the dimentions
+dim(train_x)
+
+cat("No of training samples\t--", dim(train_x)[[1]], 
+    "\tNo of test samples\t--", dim(test_x)[[1]])
 ```
 
-## Keras
+### Model Definition
+
+```{r}
+model = keras_model_sequential()
+```
+
