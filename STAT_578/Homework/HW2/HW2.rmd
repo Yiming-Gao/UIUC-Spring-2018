@@ -24,9 +24,6 @@ Here are the classes in the dataset, as well as 10 random images from each:
 
 The classes are completely mutually exclusive. There is no overlap between automobiles and trucks. "Automobile" includes sedans, SUVs, things of that sort. "Truck" includes only big trucks. Neither includes pickup trucks.
 
-## Model Architecture
-
-
 ## Goal& Approach
 In this homework, I will use R to ingest data, train a model, and evaluate it on a test set. 
 
@@ -34,6 +31,20 @@ I build a dense CNN network for classifying the images into 10 classes, which ar
 
 **Softmax** activation is used at the end which applies a softmax nonlinearity to the output of the network and calculates the **cross-entropy** loss between the probabilities calculated using the softmax activation function. For regularization, we also apply the usual weight decay losses to all learned variables.
 
+## Model Architecture
+*CIFAR-10* is to classify RGB 32*32 pixel images across 10 categories
+
+| Layer  |  Description |
+|:-:|:-:|
+| Conv2D-1  | A 2-D Convolution Layer with ReLu activation  |
+|  Pool-1 | Max pooling layer  |
+|  Conv2D-2 | A 2-D Convolution Layer with ReLu activation  |
+| Pool-2  | Max pooling layer  |
+| Local-1  | Fully Connected Layer with ReLu activation and 512 units  |
+|  Output-1 | Output layer with 10 units  |
+| Softmax_activation  | Non-Linear transformation to the outputs to compute Probabilities  |
+
+## Convolutional Neural Network
 ### Data Processing
 
 ```{r, message=FALSE, warning=FALSE}
@@ -44,7 +55,7 @@ library(keras)
 
 Then we create training and test sets, and check the dimensions of them. From the output below, we know that we have 50000 training images and 10000 test images.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 cifar = dataset_cifar10()
 
 # Training Data
@@ -62,9 +73,91 @@ cat("No of training samples\t--", dim(train_x)[[1]],
     "\tNo of test samples\t--", dim(test_x)[[1]])
 ```
 
-### Model Definition
+### Define the Model
 
 ```{r}
 model = keras_model_sequential()
+
+# Configure the Model
+model %>%
+  layer_conv_2d(filter = 48, kernel_size = c(3, 3), padding = "same",
+                input_shape = c(32, 32, 3)) %>%
+  layer_activation("relu") %>%
+  layer_conv_2d(filter = 48, kernel_size = c(3, 3)) %>%
+  layer_activation("relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_dropout(0.25) %>%
+  
+  layer_conv_2d(filter = 48 , kernel_size = c(3, 3), padding = "same") %>%
+  layer_activation("relu") %>%
+  layer_conv_2d(filter = 48,kernel_size = c(3, 3) ) %>%
+  layer_activation("relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_dropout(0.25) %>%
+  
+  #flatten the input
+  layer_flatten() %>%
+  layer_dense(512) %>%
+  layer_activation("relu") %>%
+  layer_dropout(0.5) %>%
+  
+  #output layer-10 classes-10 units
+  layer_dense(10) %>%
+  
+  #applying softmax nonlinear activation function to the output layer to calculate
+  #cross-entropy
+  layer_activation("softmax") #for computing Probabilities of classes-"logit(log probabilities)
+
+
+#Optimizer -rmsProp to do parameter updates 
+opt = optimizer_rmsprop(lr = 0.0001, decay = 1e-6)
+
+#Compile the Model
+model %>% compile(
+  loss = "categorical_crossentropy",
+  optimizer = opt,
+  metrics = "accuracy"
+)
+
+#Summary of the Model and its Architecture
+summary(model)
+```
+
+### Train the Model
+
+```{r}
+# train this CNN
+data_augmentation = TRUE
+
+if(!data_augmentation) {
+  model %>% fit(
+    train_x, train_y ,batch_size = 32, epochs = 5,
+    validation_data = list(test_x, test_y),
+    shuffle = TRUE
+  )
+  
+} else {
+  # Generate images
+  datagen = image_data_generator(
+    featurewise_center = TRUE,
+    featurewise_std_normalization = TRUE,
+    rotation_range = 20,
+    width_shift_range = 0.30,
+    height_shift_range = 0.30,
+    horizontal_flip = TRUE
+  )
+  # Fit image data generator internal statistics to some sample data
+  
+  datagen %>% fit_image_data_generator(train_x)
+  
+  #Generates batches of augmented/normalized data from image data and labels
+  model %>% fit_generator(
+    flow_images_from_data(train_x, train_y, datagen, batch_size = 32,
+                          save_to_dir = "/Users/Yiming/Desktop/Homework/STAT 578/HW2"),
+    steps_per_epoch = as.integer(50000/ 32), #no of training samples/ batch size
+    epochs = 5,
+    validation_data = list(test_x, test_y)
+  )
+}
 ```
 
