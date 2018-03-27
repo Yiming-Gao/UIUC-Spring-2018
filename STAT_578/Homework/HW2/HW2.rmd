@@ -31,20 +31,25 @@ I build a dense CNN network for classifying the images into 10 classes, which ar
 
 **Softmax** activation is used at the end which applies a softmax nonlinearity to the output of the network and calculates the **cross-entropy** loss between the probabilities calculated using the softmax activation function. For regularization, we also apply the usual weight decay losses to all learned variables.
 
-## Model Architecture
-*CIFAR-10* is to classify RGB 32*32 pixel images across 10 categories
+# Deep Learning Model
+## Model Architecture Overview
+*CIFAR-10* is to classify RGB 32*32 pixel images across 10 categories. I will use two models.
 
-| Layer  |  Description |
-|:-:|:-:|
-| Conv2D-1  | A 2-D Convolution Layer with ReLu activation  |
-|  Pool-1 | Max pooling layer  |
-|  Conv2D-2 | A 2-D Convolution Layer with ReLu activation  |
-| Pool-2  | Max pooling layer  |
-| Local-1  | Fully Connected Layer with ReLu activation and 512 units  |
-|  Output-1 | Output layer with 10 units  |
-| Softmax_activation  | Non-Linear transformation to the outputs to compute Probabilities  |
+1. **Multi-layer Perceptron Model**
 
-## Convolutional Neural Network
+2. **Convolutional Neural Network**
+
+| Layer             |  Description                                                       |
+|:-----------------:|:------------------------------------------------------------------:|
+| Conv2D-1          | A 2-D Convolution Layer with ReLu activation                       |
+|  Pool-1           | Max pooling layer                                                  |
+|  Conv2D-2         | A 2-D Convolution Layer with ReLu activation                       |
+| Pool-2            | Max pooling layer                                                  |
+| Local-1           | Fully Connected Layer with ReLu activation and 512 units           |
+|  Output-1         | Output layer with 10 units                                         |
+| Softmax_activation| Non-Linear transformation to the outputs to compute Probabilities  |
+
+## Multi-layer Perceptron
 ### Data Processing
 
 ```{r, message=FALSE, warning=FALSE}
@@ -53,7 +58,105 @@ library(tensorflow)
 library(keras)
 ```
 
-Then we create training and test sets, and check the dimensions of them. From the output below, we know that we have 50000 training images and 10000 test images.
+For this model, we need to convert a 2D array into a 1D array for feeding into the MLP and normalizing the matrix.
+
+```{r}
+# Training Data
+data = dataset_cifar10()
+train_x = data$train$x
+train_y = data$train$y
+
+# Test Set
+test_x = data$test$x
+test_y = data$test$y
+
+# Converting a 2D array into a 1D array 
+train_x = array(as.numeric(train_x), dim = c(dim(train_x)[[1]], 32 * 32))
+test_x = array(as.numeric(test_x), dim = c(dim(test_x)[[1]], 32 * 32))
+train_x = train_x / 255
+test_x = test_x / 255
+
+cat(dim(train_x)[[1]], 'train samples\n') # 60000 train examples
+cat(dim(test_x)[[1]], 'test samples\n') # 10000 test examples
+
+#convert class vectors to binary class matrices
+train_y = to_categorical(train_y, 10)
+test_y = to_categorical(test_y, 10)
+```
+
+### Define the Model
+Now let's define a keras MLP sequential model containing a linear stack of layers. This model has 1 input layer (256 neurons), 1 hidden layer (128 neurons) with dropout rate 0.4 and 1 output layer (10 neurons).
+
+```{r}
+model = keras_model_sequential()
+
+model %>% 
+  # Input layer-256 units
+  # Add a densely-connected NN layer to an output
+  layer_dense(units = 256, activation = "relu", input_shape = c(32*32))  %>%
+  # dropout layer to prevent Overfitting
+  layer_dropout(rate = 0.4) %>%
+  
+  # Hidden Layer-128 units
+  # Apply an activation function to an output.
+  # Relu can only be used for Hidden layers
+  layer_dense(units = 128,activation = "relu") %>%
+  layer_dropout(rate = 0.4) %>%
+  
+  # output layer
+  layer_dense(units = 10, activation = "softmax") 
+  # softmax activation for Output layer which computes the probabilities for the classes
+```
+
+After defining the architecture of the CNN, we need to compile and define the type of loss function and an optimizer for the model for parameter updates.
+
+```{r}
+#Compiling the Model and Optimizing the model
+#Configure a Keras model for training using compile()
+model %>%
+  compile(loss = "categorical_crossentropy",
+          optimizer = "adam",
+          metrics = c("accuracy"))
+
+#Model's summary
+summary(model)
+```
+
+### Train the Model
+Now let's train the model on the training set.
+
+```{r, include=FALSE}
+# epochs = No of iterations on a dataset.
+# batchsize = Number of samples per gradient update.
+history = model %>% fit(train_x, train_y, epochs = 20, batch_size = 128,
+                        callbacks = callback_tensorboard(log_dir = "logs/run_b"),
+                        validation_split = 0.2) 
+```
+
+We can then plot the model of epoch versus accuracy and loss. The first plot clearly shows that the accuracy increases as epoch increases, and the loss decreases as epoch increases. We could imagine we can achieve a high training accuracy as long as we have enough epochs.
+
+```{r}
+plot(history, labels = T)
+#Accuracy least for 1st epoch and highest for last epoch-10
+plot(x = history$metrics$acc,y = history$metrics$loss,
+     pch = 19, col = 'red', type = 'b',
+     ylab = "Error on trining Data", xlab = "Accuracy on Training Data")
+title("Plot of accuracy vs Loss")
+legend("topright", c("Epochs"), col = "red", pch = 19)
+```
+
+### Evaluate the Model
+We evaluate the model on the test set.
+
+```{r}
+score = model %>%
+  evaluate(test_x, test_y, batch_size = 128)
+score
+```
+
+## Convolutional Neural Network
+### Data Preprocessing
+We create training and test sets, and check the dimensions of them. From the output below, we know that we have 50000 training images and 10000 test images.
 
 ```{r, message=FALSE, warning=FALSE}
 cifar = dataset_cifar10()
@@ -76,6 +179,7 @@ cat("No of training samples\t--", dim(train_x)[[1]],
 ### Define the Model
 
 ```{r}
+# a linear stack of layers
 model = keras_model_sequential()
 
 # Configure the Model
@@ -88,9 +192,9 @@ model %>%
   layer_max_pooling_2d(pool_size = c(2, 2)) %>%
   layer_dropout(0.25) %>%
   
-  layer_conv_2d(filter = 48 , kernel_size = c(3, 3), padding = "same") %>%
+  layer_conv_2d(filter = 48, kernel_size = c(3, 3), padding = "same") %>%
   layer_activation("relu") %>%
-  layer_conv_2d(filter = 48,kernel_size = c(3, 3) ) %>%
+  layer_conv_2d(filter = 48, kernel_size = c(3, 3)) %>%
   layer_activation("relu") %>%
   layer_max_pooling_2d(pool_size = c(2, 2)) %>%
   layer_dropout(0.25) %>%
@@ -107,10 +211,13 @@ model %>%
   #applying softmax nonlinear activation function to the output layer to calculate
   #cross-entropy
   layer_activation("softmax") #for computing Probabilities of classes-"logit(log probabilities)
+```
 
+After defining the architecture of the CNN, we need to compile and define the type of loss function and an optimizer for the model for parameter updates.
 
-#Optimizer -rmsProp to do parameter updates 
-opt = optimizer_rmsprop(lr = 0.0001, decay = 1e-6)
+```{r}
+# Optimizer -rmsProp to do parameter updates 
+opt = optimizer_rmsprop(lr = 0.001, decay = 1e-6)
 
 #Compile the Model
 model %>% compile(
@@ -124,40 +231,51 @@ summary(model)
 ```
 
 ### Train the Model
+Now train the model on the images.
 
-```{r}
-# train this CNN
-data_augmentation = TRUE
+```{r, eval=FALSE, include=FALSE}
+# epochs = No of iterations on a dataset.
+# batchsize = Number of samples per gradient update.
+history = model %>% fit(train_x, train_y, epochs = 10, batch_size = 128,
+                        callbacks = callback_tensorboard(log_dir = "logs/run_b"),
+                        validation_split = 0.2) 
 
-if(!data_augmentation) {
-  model %>% fit(
-    train_x, train_y ,batch_size = 32, epochs = 5,
-    validation_data = list(test_x, test_y),
-    shuffle = TRUE
-  )
-  
-} else {
-  # Generate images
-  datagen = image_data_generator(
-    featurewise_center = TRUE,
-    featurewise_std_normalization = TRUE,
-    rotation_range = 20,
-    width_shift_range = 0.30,
-    height_shift_range = 0.30,
-    horizontal_flip = TRUE
-  )
-  # Fit image data generator internal statistics to some sample data
-  
-  datagen %>% fit_image_data_generator(train_x)
-  
-  #Generates batches of augmented/normalized data from image data and labels
-  model %>% fit_generator(
-    flow_images_from_data(train_x, train_y, datagen, batch_size = 32,
-                          save_to_dir = "/Users/Yiming/Desktop/Homework/STAT 578/HW2"),
-    steps_per_epoch = as.integer(50000/ 32), #no of training samples/ batch size
-    epochs = 5,
-    validation_data = list(test_x, test_y)
-  )
-}
+summary(history)
+history$params
+history$metrics # gives loss and acuracy metric for each epoch(iteration over training data)
 ```
 
+We can then plot the model of epoch versus accuracy and loss. The first plot clearly shows that the accuracy increases as epoch increases, and the loss decreases as epoch increases. We could imagine we can achieve a high training accuracy as long as we have enough epochs.
+
+```{r, eval=FALSE, include=FALSE}
+plot(history, labels = T)
+#Accuracy least for 1st epoch and highest for last epoch-10
+plot(x = history$metrics$acc,y = history$metrics$loss,
+     pch = 19, col = 'red', type = 'b',
+     ylab = "Error on trining Data", xlab = "Accuracy on Training Data")
+title("Plot of accuracy vs Loss")
+legend("topright", c("Epochs"), col = "red", pch = 19)
+```
+
+### Evaluate the Model
+We evaluate the model on the test set.
+
+```{r}
+score = model %>%
+  evaluate(test_x, test_y, batch_size = 128)
+score
+```
+
+It took a long time for me to train, so I set the number of epochs as 1. The above model gave me an accuracy of 86.667 % on validation set.
+
+# Summary
+## Results
+I only tried **Multi-Layer Perceptrons** and **Convolutional Neural Network** for this problem. Among the two models, it seems that CNN performs better. However, due to computational limitation, I'm not able to try all possible parameters. I believe both models could achieve high accuracies as long as we have enough computational power.
+
+## Future Work
+Below is a list of other neural network models that can be built in R using Keras.
+
+- Recurrent Neural Networks
+- Skip-Gram Models
+- Use Pre-trained models like VGG16, RESNET etc.
+- Fine-tune the pre-trained models.
