@@ -41,7 +41,7 @@ mean((IL_Renter_New$NON_TENANT_LRF - IL_Renter_New$PP_Rel_New)^2, na.rm = TRUE)
 
 
 
-######################## MSE: Test on 2015 Data for CONDO ##########################
+######################## MSE: Test on 2015 Data for CONDO ###########################
 IL_Condo_New = read.csv("~/Yiming/Spring2018/IL_Condo_2015_allperil.csv", header = TRUE)
 IL_Condo_New$CASE_INCURRED_NCAT[is.na(IL_Condo_New$CASE_INCURRED_NCAT)] = 0
 
