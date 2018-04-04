@@ -1,0 +1,46 @@
+---
+title: "Text Mining on Yelp Reviews"
+author: "Yiming Gao (yimingg2)"
+date: "4/4/2018"
+output: html_document
+---
+
+Some useful references:
+
+- The Statistical Difference between 1-Star and 5-Star Reviews on Yelp: http://minimaxir.com/2014/09/one-star-five-stars/
+- Analysis and Visualizations of Yelp Data using R and ggplot2: http://minimaxir.com/2015/12/lets-code-1/
+- Sentiment Analysis of Restaurant Reviews: https://rpubs.com/yceron/155272 
+
+The data set contains XX million reviews. It is formatted as by-line JSON: I wrote a pair of Python scripts to convert it to CSV for easy import into R.
+
+The datasets are located here:
+
+- Businesses Data: https://s3.us-east-2.amazonaws.com/578projectyelp/business.csv
+
+Necessary packages:
+
+```{r}
+library(stringr)        #This package is used for string manipulation functions
+library(dplyr)          #This package is used for data manipulation tasks
+library(tidyr)          #This package is used for data manipulation tasks
+library(data.table)     #This package is used to access the function fread which is a better/faster way to read large data
+library(wordcloud)      #This package is used to generate word clouds
+library(tm)             #This is a text mining package used in the process of generating word clouds
+# library(RWeka)          # This package is used to generate Bigramws and Trigrams
+library(ggplot2)        #This package is used for visualizations (chart/graph plotting functions)
+library(ggmap)          #This package is used for map functions 
+library(maps)           #This package is used for map functions
+library(leaflet)        #This package is used for plotting maps
+library(knitr)
+```
+
+
+### Read the data
+
+```{r, message=FALSE, warning=FALSE}
+data_business = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/business.csv")
+
+#Dimensions and attribute Names for the Business Data
+dim(data_business)
+```
+
