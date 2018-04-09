@@ -70,5 +70,3 @@ It embodies the notion that any effect you observe is due to random chance. The 
 - Power: if it's large, require large sample size
 - Effect: if it's small, meaning it's hard to detect, require large sample size
 
-# Lannett
-Clinical trials are experiments designed to evaluate new drugs to prevent or treat human disease.
