@@ -11,6 +11,8 @@ Some useful references:
 - Analysis and Visualizations of Yelp Data using R and ggplot2: http://minimaxir.com/2015/12/lets-code-1/
 - Sentiment Analysis of Restaurant Reviews: https://rpubs.com/yceron/155272 
 
+- Urbana Crime: https://github.com/mrajendiran/Yelp-Crime-Data-Mining
+
 The data set contains XX million reviews. It is formatted as by-line JSON: I wrote a pair of Python scripts to convert it to CSV for easy import into R.
 
 The datasets are located here:
