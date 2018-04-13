@@ -82,11 +82,11 @@ data_review = data_review0[, c("business_id", "stars", "text", "votes_cool", "vo
 # Business_id of Restaurants in Chambana
 chambana_restaurants = data_business_restaurants %>% 
   filter(city == "Champaign" | city == "Urbana") %>%
-  select(business_id, name)
+  select(business_id, name, stars, latitude, longitude)
 
 # Reviews Data only for Restaurants in Chambana
 chambana_reviews = data_review[data_review$business_id %in% chambana_restaurants$business_id, ]
-chambana_reviews = merge(chambana_restaurants, chambana_reviews, by = "business_id")
+chambana_reviews = merge(chambana_restaurants[, c("business_id", "name")], chambana_reviews, by = "business_id")
 ```
 
 ```{r}
@@ -106,3 +106,18 @@ For simplicity, only the attributes that are relevant to my project will be list
 | categories   | Category this business belongs to
 
 Table: Business Dataset 
+
+
+
+
+# EDA
+
+### Where are all the restaurants with more than 4 stars located?
+
+```{r}
+top_restaurants = chambana_restaurants[chambana_restaurants$stars >= 4, ]
+leaflet(top_restaurants) %>% addTiles() %>%
+  addCircleMarkers(lng = ~longitude, lat = ~latitude, radius = 5, fillOpacity = 1 , color = "orange" , popup = ~name) 
+```
+
+
