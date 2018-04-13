@@ -10,8 +10,8 @@ Some useful references:
 - The Statistical Difference between 1-Star and 5-Star Reviews on Yelp: http://minimaxir.com/2014/09/one-star-five-stars/
 - Analysis and Visualizations of Yelp Data using R and ggplot2: http://minimaxir.com/2015/12/lets-code-1/
 - Sentiment Analysis of Restaurant Reviews: https://rpubs.com/yceron/155272 
-
-- Urbana Crime: https://github.com/mrajendiran/Yelp-Crime-Data-Mining
+- EDA (Filtering): https://rpubs.com/shreyaghelani/234363
+- Mexicon restaurants: http://rstudio-pubs-static.s3.amazonaws.com/121639_3364a2eb69b54ed9b85faf1ecf21cd7f.html
 
 The data set contains XX million reviews. It is formatted as by-line JSON: I wrote a pair of Python scripts to convert it to CSV for easy import into R.
 
@@ -21,7 +21,7 @@ The datasets are located here:
 
 Necessary packages:
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(stringr)        #This package is used for string manipulation functions
 library(dplyr)          #This package is used for data manipulation tasks
 library(tidyr)          #This package is used for data manipulation tasks
@@ -34,6 +34,7 @@ library(ggmap)          #This package is used for map functions
 library(maps)           #This package is used for map functions
 library(leaflet)        #This package is used for plotting maps
 library(knitr)
+library(jsonlite)
 ```
 
 
@@ -46,3 +47,62 @@ data_business = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/busines
 dim(data_business)
 ```
 
+### Clean up Reviews Data to filter Reviews for Champaign and Urbana only
+
+```{r}
+data_business$categories[1:5]
+```
+
+Becasue Categories column in Business Data Frame is a list that can have more than one category for the business, We parsed the categories column and built another data frame that contains information for all "Restaurants". We executed this one time and stored the result in a CSV file.
+
+Now the dataset contains 21892 observations with "Restaurants" in the `categories` column.
+
+```{r}
+data_business_restaurants = data_business[data_business$categories %like% "Restaurants", ]
+dim(data_business_restaurants)
+
+# Keep relevant columns
+data_business_restaurants = data_business_restaurants[, c("business_id", "city", "latitude", "longitude", "name", "stars", "state")]
+```
+
+The Reviews Data file was read and filtered for restaurant reviews and further filtered for two cities - Champaign and Urbana. This was done in order to be able to work with a smaller data-set for the scope of this project. Since the original Reviews data is 1.1GB (1569264 rows and 10 columns). The following piece of code was used to get to the reviews dataset for restaurants in Urbana-Champaign from the original reviews dataset.
+
+```{r, message=FALSE, warning=FALSE}
+data_review0 = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/review.csv")
+
+# Dimensions and attribute Names for the Business Data
+dim(data_review0)
+
+# Keep relevant columns
+data_review = data_review0[, c("business_id", "stars", "text", "votes_cool", "votes_funny", "votes_useful")]
+```
+
+
+```{r}
+# Business_id of Restaurants in Chambana
+chambana_restaurants = data_business_restaurants %>% 
+  filter(city == "Champaign" | city == "Urbana") %>%
+  select(business_id, name)
+
+# Reviews Data only for Restaurants in Chambana
+chambana_reviews = data_review[data_review$business_id %in% chambana_restaurants$business_id, ]
+chambana_reviews = merge(chambana_restaurants, chambana_reviews, by = "business_id")
+```
+
+```{r}
+# Final review dataset
+dim(chambana_reviews)
+names(chambana_reviews)
+```
+
+
+### Preparing the data
+For simplicity, only the attributes that are relevant to my project will be listed. It includes the following information:
+
+| Field        |  Description                                                |
+|:------------:|:-----------------------------------------------------------:|
+| business_id  | The unique identifier for the business                      |
+| name         | The full business name                                      |
+| categories   | Category this business belongs to
+
+Table: Business Dataset 
