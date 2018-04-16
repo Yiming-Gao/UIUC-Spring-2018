@@ -68,6 +68,8 @@ data_business_restaurants = data_business_restaurants[, c("business_id", "city",
 The Reviews Data file was read and filtered for restaurant reviews and further filtered for two cities - Champaign and Urbana. This was done in order to be able to work with a smaller data-set for the scope of this project. Since the original Reviews data is 1.1GB (1569264 rows and 10 columns). The following piece of code was used to get to the reviews dataset for restaurants in Urbana-Champaign from the original reviews dataset.
 
 ```{r, message=FALSE, warning=FALSE}
+data_business_restaurants = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/business_restaurants.csv")
+
 data_review0 = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/review.csv")
 
 # Dimensions and attribute Names for the Business Data
@@ -78,15 +80,14 @@ data_review = data_review0[, c("business_id", "stars", "text", "votes_cool", "vo
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # Business_id of Restaurants in Chambana
 chambana_restaurants = data_business_restaurants %>% 
   filter(city == "Champaign" | city == "Urbana") %>%
   select(business_id, name, stars, latitude, longitude)
 
 # Reviews Data only for Restaurants in Chambana
-chambana_reviews = data_review[data_review$business_id %in% chambana_restaurants$business_id, ]
-chambana_reviews = merge(chambana_restaurants[, c("business_id", "name")], chambana_reviews, by = "business_id")
+chambana_reviews = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/chambana_reviews.csv")
 ```
 
 ```{r}
@@ -98,6 +99,7 @@ names(chambana_reviews)
 
 ### Preparing the data
 ```{r}
+chambana_restaurants = 
 chambana_reviews = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/chambana_reviews.csv")
 ```
 
@@ -127,10 +129,10 @@ leaflet(top_restaurants) %>% addTiles() %>%
 ### Wordcloud
 In this section, we use R packages for text mining of actual texts of Reviews related to Chambana restaurants to find what are the top frequent words used in reviews with different review ratings. We also do similar analysis to find what are frequent words used in reviews related to business ratings and find whether we can find a correlation between these two findings.
 
-The code in below shows the technique we used to find 100 frequent words related to Chambana restaurants with review ratings 4 or 5.
+The code in below shows the technique we used to find 100 frequent words related to Chambana restaurants with review ratings 4 or 5. (OR 1 &2)
 
 ```{r}
-data = chambana_reviews[chambana_reviews$stars == 4 | chambana_reviews$stars == 5, ]
+data = chambana_reviews[chambana_reviews$stars == 1 | chambana_reviews$stars == 2, ]
 text = as.vector(data$text)
 corpus = VCorpus(VectorSource(text))
 corpus = tm_map(corpus, content_transformer(tolower)) # change all letters to lowercase
@@ -147,11 +149,14 @@ m = as.matrix(dtm)
 v = sort(rowSums(m), decreasing = TRUE)
 d = data.frame(word = names(v), freq = v)
 head(d, 10)
+```
 
-
-set.seed(418)
+```{r, message=FALSE, warning=FALSE}
+# Wordcloud
+set.seed(122)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
           max.words = 200, random.order = FALSE, rot.per = 0.35, 
           colors = brewer.pal(8, "Dark2"))
 ```
 
+The above word cloud clearly shows that "place", "good", "food" and "great" are most frequent words in the reviews of restaurants with 4 or 5 stars in Champaign-Urbana.
