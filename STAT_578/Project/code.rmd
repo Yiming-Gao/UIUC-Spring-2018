@@ -126,13 +126,14 @@ leaflet(top_restaurants) %>% addTiles() %>%
 ```
 
 # Text Mining
+## Wordcloud
 ### Wordcloud
 In this section, we use R packages for text mining of actual texts of Reviews related to Chambana restaurants to find what are the top frequent words used in reviews with different review ratings. We also do similar analysis to find what are frequent words used in reviews related to business ratings and find whether we can find a correlation between these two findings.
 
 The code in below shows the technique we used to find 100 frequent words related to Chambana restaurants with review ratings 4 or 5. (OR 1 &2)
 
 ```{r}
-data = chambana_reviews[chambana_reviews$stars == 1 | chambana_reviews$stars == 2, ]
+data = chambana_reviews[chambana_reviews$stars == 4 | chambana_reviews$stars == 5, ]
 text = as.vector(data$text)
 corpus = VCorpus(VectorSource(text))
 corpus = tm_map(corpus, content_transformer(tolower)) # change all letters to lowercase
@@ -160,3 +161,27 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 ```
 
 The above word cloud clearly shows that "place", "good", "food" and "great" are most frequent words in the reviews of restaurants with 4 or 5 stars in Champaign-Urbana.
+
+### Explore frequent terms and their associations
+We can have a look at the frequent terms in the term-document matrix as follows. Below shows the words that occur at least 500 times.
+
+```{r}
+findFreqTerms(dtm, lowfreq = 500)
+```
+
+We can analyze the association between frequent terms (i.e., terms which correlate). The code below identifies which words are associated with "food" in reviews in Chambana restaurants.
+
+```{r}
+findAssocs(dtm, terms = "burger", corlimit = 0.3)
+```
+
+The frequency of the first 10 frequent words are plotted:
+
+```{r}
+barplot(d[1:10, ]$freq, las = 2, names.arg = d[1:10,]$word,
+        col = "lightblue", main = "Most Frequent Words",
+        ylab = "Word frequencies")
+```
+
+# Model
+## A Tokenization Model to predict rating based on words in review
