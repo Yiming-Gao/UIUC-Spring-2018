@@ -36,6 +36,12 @@ library(leaflet)        #This package is used for plotting maps
 library(knitr)
 library(SnowballC)
 library(caret)
+library(gmodels)
+
+# Format accuracy into percentage
+percent <- function(x, digits = 2, format = "f", ...) {
+  paste0(formatC(100 * x, format = format, digits = digits, ...), "%")
+}
 ```
 
 
@@ -177,7 +183,8 @@ barplot(d[1:10, ]$freq, las = 2, names.arg = d[1:10,]$word,
 ```
 
 # Model
-## A Tokenization Model to predict rating based on words in review
+## Data Preparation
+### Tokenization
 Now , we want to re-process all of the reviews and create a *Corpus* object from the text column.
 
 For tokenization, converting review texts to tokens, in this case, words, we use function `DocumentTermMatrix`. The result will be a matrix whose rows are reviews and columns are words that are used in documents. Each value in the matrix represents how many times word in column is been repeated in the reivew of the row. Because not all of the words are used in all reviews, **the matrix is very sparse**. We also want to focus on words that are used in at least 3% of all reviews. We added star rating of each review to the matrix and assigned “good” to 4 and 5 ratings and bad to 0-3 ratings in below, we show results of matrix, dtm.
@@ -203,6 +210,7 @@ words = as.data.frame(as.matrix(sparse))
 dtm
 ```
 
+### Training-test Split
 Now our data is ready for analysis and prediction. We build two datasets from Chambana data frame. 75% of data will be in training dataset and 25% in testing. To show that data in training and test sets are similarly distributed, we are printing the number of rows in each data set per review stars of good (4/5) and bad(1/2/3).
 
 ```{r}
@@ -219,13 +227,35 @@ prop.table(table(trn$target))
 prop.table(table(tst$target))
 ```
 
-Now, we run the model.
+## Models
+Now, we run the model with `caret` package. First we tried the simpliest GLM.
 
+### GLM
 ```{r message=FALSE, warning=FALSE}
 glmFit = train(target ~., data = trn, method = "glm")
 preds = predict(glmFit, newdata = tst)
 # confusionMatrix(preds, tst$target)
 # print(glmFit)
 
+CrossTable(preds, tst$target,
+           dnn = c("Predicted", "Actual"),
+           prop.t = FALSE, prop.c = FALSE, prop.chisq = FALSE)
 ```
 
+As the result shown above, from the total of 2080 reviews in test set, GLM model correctly predicted `r sum(preds == tst$target)` ratings, resulting in an accuracy of `r percent(confusionMatrix(preds, tst$target)$overall["Accuracy"])`.
+
+### Naive Bayes
+
+```{r message=FALSE, warning=FALSE}
+nb_Fit = train(target ~., data = trn, method = "nb")
+
+preds = predict(nb_Fit, newdata = tst)
+# confusionMatrix(preds, tst$target)
+# print(glmFit)
+
+CrossTable(preds, tst$target,
+           dnn = c("Predicted", "Actual"),
+           prop.t = FALSE, prop.c = FALSE, prop.chisq = FALSE)
+```
+
+As the result shown above, from the total of 2080 reviews in test set, Naive Bayes model correctly predicted `r sum(preds == tst$target)` ratings, resulting in an accuracy of `r percent(confusionMatrix(preds, tst$target)$overall["Accuracy"])`.
