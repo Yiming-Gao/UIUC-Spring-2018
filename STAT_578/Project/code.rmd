@@ -35,6 +35,7 @@ library(maps)           #This package is used for map functions
 library(leaflet)        #This package is used for plotting maps
 library(knitr)
 library(SnowballC)
+library(caret)
 ```
 
 
@@ -98,11 +99,6 @@ names(chambana_reviews)
 
 
 ### Preparing the data
-```{r}
-chambana_restaurants = 
-chambana_reviews = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/chambana_reviews.csv")
-```
-
 For simplicity, only the attributes that are relevant to my project will be listed. It includes the following information:
 
 | Field        |  Description                                                |
@@ -112,9 +108,6 @@ For simplicity, only the attributes that are relevant to my project will be list
 | categories   | Category this business belongs to
 
 Table: Business Dataset 
-
-
-
 
 # EDA
 ### Where are all the restaurants with more than 4 stars located?
@@ -185,3 +178,54 @@ barplot(d[1:10, ]$freq, las = 2, names.arg = d[1:10,]$word,
 
 # Model
 ## A Tokenization Model to predict rating based on words in review
+Now , we want to re-process all of the reviews and create a *Corpus* object from the text column.
+
+For tokenization, converting review texts to tokens, in this case, words, we use function `DocumentTermMatrix`. The result will be a matrix whose rows are reviews and columns are words that are used in documents. Each value in the matrix represents how many times word in column is been repeated in the reivew of the row. Because not all of the words are used in all reviews, **the matrix is very sparse**. We also want to focus on words that are used in at least 3% of all reviews. We added star rating of each review to the matrix and assigned “good” to 4 and 5 ratings and bad to 0-3 ratings in below, we show results of matrix, dtm.
+
+```{r}
+data = chambana_reviews
+data$target = ifelse(data$stars >= 4, "good", "bad")
+text = as.vector(data$text)
+corpus = VCorpus(VectorSource(text))
+corpus = tm_map(corpus, content_transformer(tolower)) # change all letters to lowercase
+corpus = tm_map(corpus, PlainTextDocument)
+corpus = tm_map(corpus, removeNumbers)
+corpus = tm_map(corpus, stripWhitespace)
+corpus = tm_map(corpus, removeWords, stopwords("english"))
+corpus = tm_map(corpus, removeWords, stopwords("SMART"))
+corpus = tm_map(corpus, stemDocument) # text stemming
+```
+
+```{r}
+dtm = DocumentTermMatrix(corpus)
+sparse = removeSparseTerms(dtm, 0.97)
+words = as.data.frame(as.matrix(sparse))
+dtm
+```
+
+Now our data is ready for analysis and prediction. We build two datasets from Chambana data frame. 75% of data will be in training dataset and 25% in testing. To show that data in training and test sets are similarly distributed, we are printing the number of rows in each data set per review stars of good (4/5) and bad(1/2/3).
+
+```{r}
+words$target = data$target
+
+# Training-test split
+set.seed(122)
+inTrain = createDataPartition (y = words$target, p = 0.75, list = FALSE)
+trn = words[inTrain, ]
+trn = trn[, -c(1, 2)]
+tst = words[-inTrain, ]
+tst = tst[, -c(1, 2)]
+prop.table(table(trn$target))
+prop.table(table(tst$target))
+```
+
+Now, we run the model.
+
+```{r message=FALSE, warning=FALSE}
+glmFit = train(target ~., data = trn, method = "glm")
+preds = predict(glmFit, newdata = tst)
+# confusionMatrix(preds, tst$target)
+# print(glmFit)
+
+```
+
