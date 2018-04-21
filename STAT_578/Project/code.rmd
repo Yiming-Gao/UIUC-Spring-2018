@@ -164,7 +164,8 @@ In this section, we use R packages for text mining of actual texts of Reviews re
 The code in below shows the technique we used to find 100 frequent words related to Chambana restaurants with review ratings 4 or 5. (OR 1 &2)
 
 ```{r}
-data = chambana_reviews[chambana_reviews$stars == 4 | chambana_reviews$stars == 5, ]
+data = chambana_reviews
+#[chambana_reviews$stars == 4 | chambana_reviews$stars == 5, ]
 text = as.vector(data$text)
 corpus = VCorpus(VectorSource(text))
 corpus = tm_map(corpus, content_transformer(tolower)) # change all letters to lowercase
@@ -222,6 +223,51 @@ ggplot(df, aes(x = term, y = freq)) +
   theme(axis.text = element_text(size = 12))
 ```
 
+### Relationships between words
+Many interesting text analyses are based on the relationships of words. When we examine pairs of two consecutive words, they are often called “bigrams”. Each token now represents a bigram using the following lines of code:
+
+```{r}
+bigrams = chambana_reviews %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+# bigrams$bigram
+```
+
+After filtering out stop words, what are the most frequent bigrams?
+
+```{r}
+bigrams_separated = bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered = bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+bigram_counts = bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE)
+
+# bigram_counts
+
+bigrams_united = bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+bigrams_united
+```
+
+```{r}
+bigram_tf_idf = bigrams_united %>%
+  count(bigram)
+bigram_tf_idf = bigram_tf_idf %>% filter(n > 100)
+
+ggplot(aes(x = reorder(bigram, n), y = n), data = bigram_tf_idf) + 
+  geom_bar(stat = 'identity', fill = "orange", width = 0.4) + 
+  ggtitle("The Most Common Bigrams in Reviews of Chambana Restaurants") + 
+  coord_flip() + theme_minimal() +
+  theme(axis.text = element_text(size = 11))
+
+```
+
+We notice the most frequent bigrams in the reviews except for Champaign-Urbana are Chinese Restaurant, black dog, Mexican food and deep dish.
+
 ### Sentiment
 `tidytext` package contains several sentiment lexicons, I'm using "bing" for the following tasks. (https://medium.com/@actsusanli/text-mining-is-fun-with-r-35e537b12002, https://github.com/susanli2016/Data-Analysis-with-R/blob/459a9cecfcad5ccf50fe8c02ae701157a62b01b5/Charles_Dickens.Rmd)
 
@@ -251,7 +297,7 @@ bing_word_counts %>%
   theme(axis.text = element_text(size = 12))
 ```
 
-The word "cheap" is the most frequent negative word here, which is somewhat counterintuitive. "good", "great" and "love" are three most frequent positive words in the corpus.
+The word "bad" is the most frequent negative word here, which is reasonable. "good", "great" and "love" are three most frequent positive words in the corpus.
 
 Using a word cloud is usually a good idea to identify trends and patterns that would otherwise be unclear or difficult to see in a tabular format. In particular, it compares most frequently used positive and negative words.
 
@@ -260,11 +306,41 @@ library(reshape2)
 bing_word_counts %>%
   acast(word ~ sentiment, value.var = "freq", fill = 0) %>%
   comparison.cloud(colors = c("#F8766D", "#00BFC4"),
-                   max.words = 100)
+                   max.words = 100, title.size = 2)
 ```
 
-### 
+### Stars vs sentiment
+Apply **NRC sentiment dictionary** to the reviews.
 
+```{r}
+library(syuzhet)
+star_sentiment = cbind(stars = chambana_reviews$stars, get_nrc_sentiment(chambana_reviews$text))
+```
+
+Create a data frame to combine the star of each review with the sentiment score, then extract positive and negative scores for visualization.
+
+```{r}
+star_sentiment$negative = -star_sentiment$negative
+pos_neg = star_sentiment %>% 
+  select(stars, positive, negative) %>% 
+  melt(id = "stars") %>%
+  group_by(stars) 
+
+names(pos_neg) = c("stars", "sentiment", "value")
+```
+
+```{r}
+library(ggthemes)
+ggplot(data = pos_neg, aes(x = stars, y = value, fill = sentiment)) +
+        geom_bar(stat = 'identity', position = position_dodge()) + theme_minimal() +
+        ylab("Sentiment") + 
+        ggtitle("Positive and Negative Sentiment in Reviews") +
+  scale_color_manual(values = c("#00BFC4", "#F8766D")) +
+  scale_fill_manual(values = c("#00BFC4", "#F8766D")) +
+  theme(axis.text = element_text(size = 16))
+```
+
+It seems that reviews with more stars tend to have higher positive and lower negative scores, which is reasonable to us. Due to the computational limitation, I only tried a small part of reviews for visualization.
 
 
 # Model
