@@ -37,6 +37,8 @@ library(knitr)
 library(SnowballC)
 library(caret)
 library(gmodels)
+library(quanteda)
+library(tidytext)
 
 # Format accuracy into percentage
 percent <- function(x, digits = 2, format = "f", ...) {
@@ -70,7 +72,7 @@ data_business_restaurants = data_business[data_business$categories %like% "Resta
 dim(data_business_restaurants)
 
 # Keep relevant columns
-data_business_restaurants = data_business_restaurants[, c("business_id", "city", "latitude", "longitude", "name", "stars", "state", "review_count")]
+data_business_restaurants = data_business_restaurants[, c("business_id", "city", "latitude", "longitude", "name", "categories", "stars", "state", "review_count")]
 ```
 
 The Reviews Data file was read and filtered for restaurant reviews and further filtered for two cities - Champaign and Urbana. This was done in order to be able to work with a smaller data-set for the scope of this project. Since the original Reviews data is 1.1GB (1569264 rows and 10 columns). The following piece of code was used to get to the reviews dataset for restaurants in Urbana-Champaign from the original reviews dataset.
@@ -90,7 +92,7 @@ data_review = data_review0[, c("business_id", "stars", "text", "votes_cool", "vo
 # Business_id of Restaurants in Chambana
 chambana_restaurants = data_business_restaurants %>% 
   filter(city == "Champaign" | city == "Urbana") %>%
-  select(business_id, name, stars, latitude, longitude, review_count)
+  select(business_id, name, categories, stars, latitude, longitude, review_count)
 
 # Reviews Data only for Restaurants in Chambana
 chambana_reviews = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/chambana_reviews.csv")
@@ -147,6 +149,13 @@ leaflet(top_restaurants) %>% addTiles() %>%
   addCircleMarkers(lng = ~longitude, lat = ~latitude, radius = 5, fillOpacity = 1 , color = "orange" , popup = ~name) 
 ```
 
+### What is the average rating of Chinese restaurants?
+
+```{r}
+
+```
+
+
 # Text Mining
 ## Wordcloud
 ### Wordcloud
@@ -179,31 +188,84 @@ head(d, 10)
 set.seed(122)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
           max.words = 200, random.order = FALSE, rot.per = 0.35, 
-          colors = brewer.pal(8, "Dark2"))
+          colors = brewer.pal(6, "Dark2"))
 ```
 
 The above word cloud clearly shows that "place", "good", "food" and "great" are most frequent words in the reviews of restaurants with 4 or 5 stars in Champaign-Urbana.
 
 ### Explore frequent terms and their associations
-We can have a look at the frequent terms in the term-document matrix as follows. Below shows the words that occur at least 500 times.
+We can have a look at the frequent terms in the term-document matrix as follows. Below shows the words that occur at least 100 times.
 
 ```{r}
-findFreqTerms(dtm, lowfreq = 500)
+words.100 = findFreqTerms(dtm, lowfreq = 100)
 ```
 
-We can analyze the association between frequent terms (i.e., terms which correlate). The code below identifies which words are associated with "food" in reviews in Chambana restaurants.
+Compute frequency only for selected words
 
 ```{r}
-findAssocs(dtm, terms = "burger", corlimit = 0.3)
+dtm.100 = DocumentTermMatrix(corpus, control = list(dictionary = words.100))
 ```
 
-The frequency of the first 10 frequent words are plotted:
+Top 10 tokens
+
+```{r message=FALSE, warning=FALSE}
+term.freq = colSums(as.matrix(dtm.100))
+words10 = sort(term.freq, T)[1: 10]
+df = data.frame(term = names(words10), freq = words10)
+```
 
 ```{r}
-barplot(d[1:10, ]$freq, las = 2, names.arg = d[1:10,]$word,
-        col = "lightblue", main = "Most Frequent Words",
-        ylab = "Word frequencies")
+ggplot(df, aes(x = term, y = freq)) + 
+  geom_bar(stat = "identity", fill = "orange", width = 0.5) + 
+  xlab("Tokens") + ylab("Count") + 
+  coord_flip() + theme_minimal() +
+  theme(axis.text = element_text(size = 12))
 ```
+
+### Sentiment
+`tidytext` package contains several sentiment lexicons, I'm using "bing" for the following tasks. (https://medium.com/@actsusanli/text-mining-is-fun-with-r-35e537b12002, https://github.com/susanli2016/Data-Analysis-with-R/blob/459a9cecfcad5ccf50fe8c02ae701157a62b01b5/Charles_Dickens.Rmd)
+
+```{r message=FALSE, warning=FALSE}
+bing_word_counts = d %>%
+  inner_join(get_sentiments("bing"), by = "word") 
+  # count(word, sentiment) %>%
+  # ungroup()
+bing_word_counts
+```
+
+Here I got the sentiment categories of review words.
+
+```{r}
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10, wt = freq) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, freq)) %>%
+  ggplot(aes(word, freq, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Words Contribute to sentiment",
+       x = NULL) +
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12))
+```
+
+The word "cheap" is the most frequent negative word here, which is somewhat counterintuitive. "good", "great" and "love" are three most frequent positive words in the corpus.
+
+Using a word cloud is usually a good idea to identify trends and patterns that would otherwise be unclear or difficult to see in a tabular format. In particular, it compares most frequently used positive and negative words.
+
+```{r message=FALSE, warning=FALSE}
+library(reshape2)
+bing_word_counts %>%
+  acast(word ~ sentiment, value.var = "freq", fill = 0) %>%
+  comparison.cloud(colors = c("#F8766D", "#00BFC4"),
+                   max.words = 100)
+```
+
+### 
+
+
 
 # Model
 ## Data Preparation
@@ -213,10 +275,16 @@ Now , we want to re-process all of the reviews and create a *Corpus* object from
 For tokenization, converting review texts to tokens, in this case, words, we use function `DocumentTermMatrix`. The result will be a matrix whose rows are reviews and columns are words that are used in documents. Each value in the matrix represents how many times word in column is been repeated in the reivew of the row. Because not all of the words are used in all reviews, **the matrix is very sparse**. We also want to focus on words that are used in at least 3% of all reviews. We added star rating of each review to the matrix and assigned “good” to 4 and 5 ratings and bad to 0-3 ratings in below, we show results of matrix, dtm.
 
 ```{r}
+# helper functions
+remove1 = function(x) gsub("...", "", x)
+remove2 = function(x) gsub("\"\"\"\"", "", x)
+
 data = chambana_reviews
 data$target = ifelse(data$stars >= 4, "good", "bad")
 text = as.vector(data$text)
 corpus = VCorpus(VectorSource(text))
+corpus = tm_map(corpus, content_transformer(remove1))
+corpus = tm_map(corpus, content_transformer(remove2))
 corpus = tm_map(corpus, content_transformer(tolower)) # change all letters to lowercase
 corpus = tm_map(corpus, PlainTextDocument)
 corpus = tm_map(corpus, removeNumbers)
@@ -230,7 +298,25 @@ corpus = tm_map(corpus, stemDocument) # text stemming
 dtm = DocumentTermMatrix(corpus)
 sparse = removeSparseTerms(dtm, 0.97)
 words = as.data.frame(as.matrix(sparse))
-dtm
+```
+
+### N-gram Dictionary
+While the word analysis performed in this document is helpful for initial exploration, the data analyst will need to construct a dictionary of bigrams, trigrams, and four-grams, collectively called n-grams. Bigrams are two word phrases, trigrams are three word phrases, and four-grams are four word phrases. Here is an example of trigrams from the randomly sampled twitter corpus. Recall that stop words had been removed so the phrases may look choppy. In the final dictionary, stop phrases and words of any length will be maintained.
+
+```{r}
+# Ngram tokenizer
+require(quanteda)
+tokenize(toLower(chambana_reviews$text[1]), removePunct = TRUE, ngrams = 2)
+```
+
+```{r}
+# tokenize into tri-grams
+trigram.dtm = TermDocumentMatrix(corpus, control = list(tokenize = TrigramTokenizer))
+
+# put into data frame
+freq.trigram = data.frame(word = trigram.twitterTdm$dimnames$Terms, frequency = trigram.twitterTdm$v)
+# reorder by descending frequency
+freq.trigram.twitter <- plyr::arrange(freq.trigram.twitter, -frequency)
 ```
 
 ### Training-test Split
