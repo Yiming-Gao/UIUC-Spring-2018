@@ -66,17 +66,16 @@ Now the dataset contains 21892 observations with "Restaurants" in the `categorie
 
 ```{r}
 data_business_restaurants = data_business[data_business$categories %like% "Restaurants", ]
+
 dim(data_business_restaurants)
 
 # Keep relevant columns
-data_business_restaurants = data_business_restaurants[, c("business_id", "city", "latitude", "longitude", "name", "stars", "state")]
+data_business_restaurants = data_business_restaurants[, c("business_id", "city", "latitude", "longitude", "name", "stars", "state", "review_count")]
 ```
 
 The Reviews Data file was read and filtered for restaurant reviews and further filtered for two cities - Champaign and Urbana. This was done in order to be able to work with a smaller data-set for the scope of this project. Since the original Reviews data is 1.1GB (1569264 rows and 10 columns). The following piece of code was used to get to the reviews dataset for restaurants in Urbana-Champaign from the original reviews dataset.
 
 ```{r, message=FALSE, warning=FALSE}
-data_business_restaurants = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/business_restaurants.csv")
-
 data_review0 = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/review.csv")
 
 # Dimensions and attribute Names for the Business Data
@@ -91,7 +90,7 @@ data_review = data_review0[, c("business_id", "stars", "text", "votes_cool", "vo
 # Business_id of Restaurants in Chambana
 chambana_restaurants = data_business_restaurants %>% 
   filter(city == "Champaign" | city == "Urbana") %>%
-  select(business_id, name, stars, latitude, longitude)
+  select(business_id, name, stars, latitude, longitude, review_count)
 
 # Reviews Data only for Restaurants in Chambana
 chambana_reviews = fread("https://s3.us-east-2.amazonaws.com/578projectyelp/chambana_reviews.csv")
@@ -116,6 +115,30 @@ For simplicity, only the attributes that are relevant to my project will be list
 Table: Business Dataset 
 
 # EDA
+### A Stacked Bar Chart of 20 Restaurants in Chambana with the highest number of reviews and a segmentation by Rating
+
+```{r}
+restaurants_maximum_ratings = chambana_restaurants %>%
+  arrange(desc(review_count)) %>% 
+  head(20) %>% 
+  select(business_id, name, review_count, Average_Rating = stars)
+
+restaurants_maximum_ratings_data = merge(restaurants_maximum_ratings,
+                                         chambana_reviews, 
+                                         by = "business_id") %>%
+  select(business_id, name, review_count, Average_Rating, stars)
+
+ggplot(data = restaurants_maximum_ratings_data, aes(x = reorder(name, review_count), y = review_count, fill = as.factor(stars))) + 
+  coord_flip() +
+  geom_bar(stat = "identity") + 
+  labs(title = "Restaurants in Chambana with the maximum number of reviews",
+       y = "Count of Reviews", 
+       x = "Restaurant Name", 
+       fill = "Rating") + 
+  scale_fill_brewer(palette = "YlOrRd")  + 
+  theme(axis.text.y = element_text(size = 14))
+```
+
 ### Where are all the restaurants with more than 4 stars located?
 
 ```{r}
