@@ -443,4 +443,4 @@ CrossTable(preds, tst$target,
            prop.t = FALSE, prop.c = FALSE, prop.chisq = FALSE)
 ```
 
-As the result shown above, from the total of 2080 reviews in test set, Naive Bayes model correctly predicted `r sum(preds == tst$target)` ratings, resulting in an accuracy of `r percent(confusionMatrix(preds, tst$target)$overall["Accuracy"])`.
+As the result shown above, from the total of 2496 reviews in test set, Naive Bayes model correctly predicted `r sum(preds == tst$target)` ratings, resulting in an accuracy of `r percent(confusionMatrix(preds, tst$target)$overall["Accuracy"])`.
